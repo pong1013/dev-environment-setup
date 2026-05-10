@@ -93,7 +93,7 @@ git --version
 - [x] 生成 `.devcontainer` 與 `docker-compose.yml`
 - [x] 補齊 README 基本用法與啟動前準備
 - [ ] 擴充非互動模式（例如：`make chien-dev start OS=ubuntu:22.04 SERVICES=postgres,redis ENV_NAME=my-dev-env`）
-- [ ] 新增可自訂環境名稱（啟動時用於 dev container / 服務命名）
+- [x] 新增可自訂環境名稱（啟動時用於 dev container / 服務命名）
 - [ ] 設定優先序規則（CLI > `chien-dev.yaml` > 預設值）
 - [ ] 將語言與 feature 模組化（profiles/features 檔案）
 - [ ] 補 `project init`（`.env.example`、基本 Make targets）
