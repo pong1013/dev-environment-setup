@@ -1,0 +1,702 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+GENERATED_DIR="${ROOT_DIR}/generated"
+ENVS_DIR="${GENERATED_DIR}/envs"
+
+command="${1:-start}"
+env_name_arg="${2:-}"
+
+env_dir_for() {
+  local env_name="$1"
+  echo "${ENVS_DIR}/${env_name}"
+}
+
+config_file_for() {
+  local env_name="$1"
+  echo "$(env_dir_for "${env_name}")/chien-dev.yaml"
+}
+
+devcontainer_dir_for() {
+  local env_name="$1"
+  echo "$(env_dir_for "${env_name}")/.devcontainer"
+}
+
+compose_file_for() {
+  local env_name="$1"
+  echo "$(env_dir_for "${env_name}")/docker-compose.yml"
+}
+
+validate_env_name() {
+  local env_name="$1"
+  if [[ -z "${env_name}" ]]; then
+    echo "Error: environment name is required."
+    exit 1
+  fi
+  if [[ ! "${env_name}" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ ]]; then
+    echo "Error: invalid environment name '${env_name}'. Use letters, numbers, '-' or '_'."
+    exit 1
+  fi
+}
+
+resolve_env_name() {
+  local provided_name="$1"
+  if [[ -n "${provided_name}" ]]; then
+    echo "${provided_name}"
+    return
+  fi
+  local prompted_name
+  read -r -p "Enter environment name (e.g. go-dev, node-dev): " prompted_name
+  echo "${prompted_name}"
+}
+
+validate_project_path() {
+  local project_path="$1"
+  if [[ -z "${project_path}" ]]; then
+    return 0
+  fi
+  if [[ "${project_path}" != /* ]]; then
+    echo "Error: PROJECT must be an absolute path, got: ${project_path}"
+    exit 1
+  fi
+  if [[ ! -d "${project_path}" ]]; then
+    echo "Error: PROJECT path does not exist or is not a directory: ${project_path}"
+    exit 1
+  fi
+}
+
+print_header() {
+  echo "=============================================="
+  echo " chien-dev | Dev Environment Setup"
+  echo "=============================================="
+}
+
+prompt_choice() {
+  local prompt="$1"
+  shift
+  local options=("$@")
+  local i
+  local choice
+
+  echo "${prompt}" >&2
+  for ((i=0; i<${#options[@]}; i++)); do
+    echo "  $((i+1))) ${options[$i]}" >&2
+  done
+
+  while true; do
+    read -r -p "Enter option number: " choice >&2
+    if [[ "${choice}" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= ${#options[@]} )); then
+      echo "${options[$((choice-1))]}"
+      return
+    fi
+    echo "Invalid option, please try again." >&2
+  done
+}
+
+prompt_multi_choice() {
+  local prompt="$1"
+  shift
+  local options=("$@")
+  local i
+  local input
+  local idx
+  local token
+  local -a selected=()
+  local -a numbers=()
+  local seen_tokens=""
+
+  echo "${prompt}" >&2
+  for ((i=0; i<${#options[@]}; i++)); do
+    echo "  $((i+1))) ${options[$i]}" >&2
+  done
+
+  while true; do
+    read -r -p "Enter one or more numbers (e.g. 1+2): " input >&2
+    input="${input// /}"
+    IFS='+' read -r -a numbers <<< "${input}"
+    selected=()
+    seen_tokens=""
+    local valid="true"
+
+    if [[ ${#numbers[@]} -eq 0 || -z "${numbers[0]}" ]]; then
+      valid="false"
+    fi
+
+    if [[ "${valid}" == "true" ]]; then
+      for token in "${numbers[@]}"; do
+        if [[ ! "${token}" =~ ^[0-9]+$ ]]; then
+          valid="false"
+          break
+        fi
+        idx=$((token-1))
+        if (( idx < 0 || idx >= ${#options[@]} )); then
+          valid="false"
+          break
+        fi
+        if [[ ",${seen_tokens}," != *",${token},"* ]]; then
+          selected+=("${options[$idx]}")
+          seen_tokens="${seen_tokens},${token}"
+        fi
+      done
+    fi
+
+    if [[ "${valid}" == "true" && ${#selected[@]} -gt 0 ]]; then
+      printf "%s\n" "${selected[@]}"
+      return
+    fi
+
+    echo "Invalid input, please use numbers like 1 or 1+2." >&2
+  done
+}
+
+prompt_yes_no() {
+  local prompt="$1"
+  local default="${2:-y}"
+  local answer
+
+  if [[ "${default}" == "y" ]]; then
+    read -r -p "${prompt} [Y/n]: " answer
+    answer="${answer:-Y}"
+  else
+    read -r -p "${prompt} [y/N]: " answer
+    answer="${answer:-N}"
+  fi
+
+  [[ "${answer}" =~ ^[Yy]$ ]]
+}
+
+render_config() {
+  local target_config_file="$1"
+  local env_name="$2"
+  local os_version="$3"
+  local include_go="$4"
+  local include_node="$5"
+  local include_pg="$6"
+  local include_redis="$7"
+
+  cat > "${target_config_file}" <<EOF
+version: 1
+name: ${env_name}
+backend: devcontainer
+
+os:
+  distro: ubuntu
+  version: "${os_version}"
+
+languages:
+  go: ${include_go}
+  node: ${include_node}
+
+features:
+  system_tools: true
+  git_ssh: true
+  docker_compose: true
+  make_lint: true
+  project_init: true
+
+services:
+  postgres:
+    enabled: ${include_pg}
+    version: "16"
+    port: 5432
+  redis:
+    enabled: ${include_redis}
+    version: "7"
+    port: 6379
+EOF
+}
+
+render_devcontainer() {
+  local target_devcontainer_dir="$1"
+  local env_name="$2"
+  local os_version="$3"
+  local include_go="$4"
+  local include_node="$5"
+  mkdir -p "${target_devcontainer_dir}" "${GENERATED_DIR}"
+
+  cat > "${target_devcontainer_dir}/Dockerfile" <<EOF
+FROM ubuntu:${os_version}
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \\
+    ca-certificates curl wget jq unzip git openssh-client make build-essential \\
+    gnupg lsb-release software-properties-common && \\
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+EOF
+
+  if [[ "${include_go}" == "true" ]]; then
+    cat >> "${target_devcontainer_dir}/Dockerfile" <<'EOF'
+
+# Go
+RUN curl -fsSL https://go.dev/dl/go1.23.0.linux-amd64.tar.gz -o /tmp/go.tar.gz && \
+    rm -rf /usr/local/go && tar -C /usr/local -xzf /tmp/go.tar.gz && \
+    rm -f /tmp/go.tar.gz
+
+ENV PATH="/usr/local/go/bin:${PATH}"
+EOF
+  fi
+
+  if [[ "${include_node}" == "true" ]]; then
+    cat >> "${target_devcontainer_dir}/Dockerfile" <<'EOF'
+
+# Node.js LTS
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get update && apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+EOF
+  fi
+
+  cat > "${target_devcontainer_dir}/devcontainer.json" <<EOF
+{
+  "name": "${env_name}",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "workspace",
+  "workspaceFolder": "/workspace",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "dbaeumer.vscode-eslint",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}
+EOF
+}
+
+render_compose() {
+  local target_compose_file="$1"
+  local default_project_path="$2"
+  local include_pg="$3"
+  local include_redis="$4"
+
+  cat > "${target_compose_file}" <<EOF
+services:
+  workspace:
+    build:
+      context: ./.devcontainer
+      dockerfile: Dockerfile
+    volumes:
+      - \${PROJECT_PATH:-${default_project_path}}:/workspace
+    command: sleep infinity
+EOF
+
+  if [[ "${include_pg}" == "true" ]]; then
+    cat >> "${target_compose_file}" <<'EOF'
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: devdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+EOF
+  fi
+
+  if [[ "${include_redis}" == "true" ]]; then
+    cat >> "${target_compose_file}" <<'EOF'
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+EOF
+  fi
+
+  if [[ "${include_pg}" == "true" || "${include_redis}" == "true" ]]; then
+    cat >> "${target_compose_file}" <<'EOF'
+
+volumes:
+EOF
+  fi
+
+  if [[ "${include_pg}" == "true" ]]; then
+    cat >> "${target_compose_file}" <<'EOF'
+  postgres-data:
+EOF
+  fi
+
+  if [[ "${include_redis}" == "true" ]]; then
+    cat >> "${target_compose_file}" <<'EOF'
+  redis-data:
+EOF
+  fi
+}
+
+ensure_dependencies() {
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "Error: docker not found. Please install Docker Desktop first."
+    exit 1
+  fi
+  if ! docker compose version >/dev/null 2>&1; then
+    echo "Error: docker compose is unavailable. Please update Docker."
+    exit 1
+  fi
+}
+
+do_init() {
+  print_header
+  local env_name
+  local os_option
+  local language_options_raw
+  local language_option
+  local include_go="false"
+  local include_node="false"
+  local include_pg="false"
+  local include_redis="false"
+  local os_version
+  local env_dir
+  local config_file
+  local devcontainer_dir
+  local compose_file
+
+  env_name="$(resolve_env_name "${env_name_arg}")"
+  validate_env_name "${env_name}"
+  os_option="$(prompt_choice "Select OS version:" "ubuntu:22.04" "ubuntu:24.04")"
+  language_options_raw="$(prompt_multi_choice "Select language stack(s):" "Go" "Node")"
+  while IFS= read -r language_option; do
+    case "${language_option}" in
+      Go)
+        include_go="true"
+        ;;
+      Node)
+        include_node="true"
+        ;;
+    esac
+  done <<< "${language_options_raw}"
+
+  if prompt_yes_no "Include PostgreSQL service?" "y"; then
+    include_pg="true"
+  fi
+  if prompt_yes_no "Include Redis service?" "y"; then
+    include_redis="true"
+  fi
+
+  os_version="${os_option#ubuntu:}"
+
+  env_dir="$(env_dir_for "${env_name}")"
+  config_file="$(config_file_for "${env_name}")"
+  devcontainer_dir="$(devcontainer_dir_for "${env_name}")"
+  compose_file="$(compose_file_for "${env_name}")"
+  mkdir -p "${env_dir}"
+
+  render_config "${config_file}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_pg}" "${include_redis}"
+  render_devcontainer "${devcontainer_dir}" "${env_name}" "${os_version}" "${include_go}" "${include_node}"
+  render_compose "${compose_file}" "${ROOT_DIR}" "${include_pg}" "${include_redis}"
+
+  echo ""
+  echo "Generated environment: ${env_name}"
+  echo "  - ${config_file}"
+  echo "  - ${devcontainer_dir}/Dockerfile"
+  echo "  - ${devcontainer_dir}/devcontainer.json"
+  echo "  - ${compose_file}"
+}
+
+do_start() {
+  local env_name
+  local env_dir
+  local compose_file
+  local project_path="${PROJECT:-}"
+  ensure_dependencies
+  env_name="${env_name_arg}"
+  validate_env_name "${env_name}"
+  validate_project_path "${project_path}"
+  env_dir="$(env_dir_for "${env_name}")"
+  compose_file="$(compose_file_for "${env_name}")"
+
+  if [[ ! -d "${env_dir}" || ! -f "${compose_file}" ]]; then
+    echo "Environment '${env_name}' not found. Initializing it now..."
+    do_init
+  fi
+  compose_file="$(compose_file_for "${env_name}")"
+  echo "Starting development environment: ${env_name}"
+  if [[ -n "${project_path}" ]]; then
+    echo "Mounting project path: ${project_path}"
+    PROJECT_PATH="${project_path}" docker compose -p "${env_name}" -f "${compose_file}" up -d
+  else
+    docker compose -p "${env_name}" -f "${compose_file}" up -d
+  fi
+  echo "Done. You can now open this project in a dev container."
+}
+
+do_stop() {
+  local env_name
+  local compose_file
+  ensure_dependencies
+  env_name="${env_name_arg}"
+  validate_env_name "${env_name}"
+  compose_file="$(compose_file_for "${env_name}")"
+
+  if [[ -f "${compose_file}" ]]; then
+    docker compose -p "${env_name}" -f "${compose_file}" down
+  else
+    echo "Environment '${env_name}' not found. Nothing to stop."
+  fi
+}
+
+print_env_status_table() {
+  local env_name="$1"
+  local compose_file="$2"
+  local services_raw
+  local ps_raw
+
+  services_raw="$(docker compose -p "${env_name}" -f "${compose_file}" config --services || true)"
+  ps_raw="$(docker compose -p "${env_name}" -f "${compose_file}" ps --format json || true)"
+
+  ENV_NAME="${env_name}" SERVICES_RAW="${services_raw}" PS_RAW="${ps_raw}" python3 <<'PY'
+import json
+import os
+
+env_name = os.environ.get("ENV_NAME", "")
+services_raw = os.environ.get("SERVICES_RAW", "")
+ps_raw = os.environ.get("PS_RAW", "")
+
+services = [s.strip() for s in services_raw.splitlines() if s.strip()]
+if not services:
+    print(f"=== {env_name} ===")
+    print("No services declared in compose file.\n")
+    raise SystemExit(0)
+
+containers = []
+if ps_raw.strip():
+    raw = ps_raw.strip()
+    try:
+        if raw.startswith("["):
+            containers = json.loads(raw)
+        else:
+            containers = [json.loads(line) for line in raw.splitlines() if line.strip()]
+    except Exception:
+        containers = []
+
+by_service = {}
+for c in containers:
+    service = c.get("Service", "").strip()
+    if service:
+        by_service[service] = c
+
+def fmt_ports(published_ports):
+    if not published_ports:
+        return "-"
+    parts = []
+    for p in published_ports:
+        target = p.get("TargetPort", "")
+        published = p.get("PublishedPort", "")
+        protocol = p.get("Protocol", "tcp")
+        host_ip = p.get("HostIp", "0.0.0.0")
+        if published and target:
+            host_label = "localhost" if host_ip in ("0.0.0.0", "::") else host_ip
+            parts.append(f"{host_label}:{published} -> container:{target}/{protocol}")
+        elif target:
+            parts.append(f"container:{target}/{protocol}")
+    if not parts:
+        return "-"
+    seen = []
+    for part in parts:
+        if part not in seen:
+            seen.append(part)
+    return ", ".join(seen)
+
+print(f"=== {env_name} ===")
+rows = []
+for service in services:
+    c = by_service.get(service)
+    if c is None:
+        rows.append({
+            "Service": service,
+            "State": "not-created",
+            "Ports": "-",
+            "Container": "-",
+            "Image": "-",
+            "Command": "-",
+        })
+        continue
+
+    rows.append({
+        "Service": c.get("Service", "") or service,
+        "State": c.get("State", "") or "-",
+        "Ports": fmt_ports(c.get("Publishers") or []),
+        "Container": c.get("Name", "") or "-",
+        "Image": c.get("Image", "") or "-",
+        "Command": c.get("Command", "") or "-",
+    })
+
+headers = ["Service", "State", "Ports", "Container", "Image"]
+widths = {}
+for h in headers:
+    widths[h] = len(h)
+for row in rows:
+    for h in headers:
+        widths[h] = max(widths[h], len(str(row[h])))
+
+line = "  " + " | ".join(h.ljust(widths[h]) for h in headers)
+sep = "  " + "-+-".join("-" * widths[h] for h in headers)
+
+running_count = sum(1 for r in rows if r["State"] == "running")
+print(f"Services: {len(rows)} total, {running_count} running")
+print(line)
+print(sep)
+for row in rows:
+    print("  " + " | ".join(str(row[h]).ljust(widths[h]) for h in headers))
+
+print("")
+PY
+}
+
+do_status() {
+  local env_name
+  local env_dir
+  local compose_file
+  local found_any="false"
+  ensure_dependencies
+  env_name="${env_name_arg}"
+
+  if [[ -n "${env_name}" ]]; then
+    validate_env_name "${env_name}"
+    compose_file="$(compose_file_for "${env_name}")"
+    if [[ -f "${compose_file}" ]]; then
+      print_env_status_table "${env_name}" "${compose_file}"
+    else
+      echo "Environment '${env_name}' not found. Run: make init ${env_name}"
+    fi
+    return
+  fi
+
+  if [[ ! -d "${ENVS_DIR}" ]]; then
+    echo "No environments found. Run: make init <name>"
+    return
+  fi
+
+  for env_dir in "${ENVS_DIR}"/*; do
+    if [[ ! -d "${env_dir}" ]]; then
+      continue
+    fi
+    env_name="$(basename "${env_dir}")"
+    compose_file="$(compose_file_for "${env_name}")"
+    if [[ -f "${compose_file}" ]]; then
+      found_any="true"
+      print_env_status_table "${env_name}" "${compose_file}"
+    fi
+  done
+
+  if [[ "${found_any}" == "false" ]]; then
+    echo "No environments found. Run: make init <name>"
+  fi
+}
+
+do_doctor() {
+  echo "Running environment checks..."
+  if command -v docker >/dev/null 2>&1; then
+    echo "  - docker: OK"
+  else
+    echo "  - docker: MISSING"
+  fi
+
+  if docker compose version >/dev/null 2>&1; then
+    echo "  - docker compose: OK"
+  else
+    echo "  - docker compose: MISSING"
+  fi
+
+  if command -v make >/dev/null 2>&1; then
+    echo "  - make: OK"
+  else
+    echo "  - make: MISSING"
+  fi
+}
+
+do_shell() {
+  local env_name
+  local compose_file
+  ensure_dependencies
+  env_name="${env_name_arg}"
+  validate_env_name "${env_name}"
+  compose_file="$(compose_file_for "${env_name}")"
+
+  if [[ ! -f "${compose_file}" ]]; then
+    echo "Environment '${env_name}' not found. Run: make chien-dev init ${env_name}"
+    exit 1
+  fi
+
+  docker compose -p "${env_name}" -f "${compose_file}" exec workspace bash
+}
+
+do_clean() {
+  local env_name
+  local env_dir
+  local compose_file
+  ensure_dependencies
+  env_name="${env_name_arg}"
+
+  if [[ -n "${env_name}" ]]; then
+    validate_env_name "${env_name}"
+    env_dir="$(env_dir_for "${env_name}")"
+    compose_file="$(compose_file_for "${env_name}")"
+    if [[ ! -d "${env_dir}" ]]; then
+      echo "Environment '${env_name}' not found."
+      exit 1
+    fi
+    if ! prompt_yes_no "This will remove environment '${env_name}' containers, volumes and generated files. Continue?" "n"; then
+      echo "Cancelled."
+      exit 0
+    fi
+    docker compose -p "${env_name}" -f "${compose_file}" down -v --remove-orphans || true
+    rm -rf "${env_dir}"
+    echo "Environment '${env_name}' cleanup completed."
+    exit 0
+  fi
+
+  if ! prompt_yes_no "This will remove containers and volumes. Continue?" "n"; then
+    echo "Cancelled."
+    exit 0
+  fi
+  if [[ -d "${ENVS_DIR}" ]]; then
+    for env_dir in "${ENVS_DIR}"/*; do
+      if [[ ! -d "${env_dir}" ]]; then
+        continue
+      fi
+      env_name="$(basename "${env_dir}")"
+      compose_file="$(compose_file_for "${env_name}")"
+      docker compose -p "${env_name}" -f "${compose_file}" down -v --remove-orphans || true
+    done
+  fi
+  rm -rf "${GENERATED_DIR}"
+  echo "All environments cleanup completed."
+}
+
+case "${command}" in
+  start)
+    do_start
+    ;;
+  init)
+    do_init
+    ;;
+  stop)
+    do_stop
+    ;;
+  status)
+    do_status
+    ;;
+  doctor)
+    do_doctor
+    ;;
+  shell)
+    do_shell
+    ;;
+  clean)
+    do_clean
+    ;;
+  *)
+    echo "Unknown command: ${command}"
+    echo "Available commands: start | init | stop | status | doctor | shell | clean"
+    exit 1
+    ;;
+esac

@@ -1,0 +1,10 @@
+services:
+  workspace:
+    build:
+      context: ./.devcontainer
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace
+    command: sleep infinity
+
+# Placeholder template for future generator refactor.
