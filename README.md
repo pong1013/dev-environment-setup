@@ -21,7 +21,7 @@ If you are using Linux, make sure `docker`, `docker compose`, and `make` are ins
 
 ## MVP Features
 
-- Interactive initialization (Ubuntu version, language stacks, services, and environment name)
+- Interactive environment creation (Ubuntu version, language stacks, services, and environment name)
 - Generates per-environment files under `generated/envs/<name>/`
 - Start, stop, status, doctor checks, and cleanup commands
 
@@ -31,7 +31,7 @@ Recommended first-time flow:
 
 ```bash
 make chien-dev doctor
-make chien-dev init <NAME>
+make chien-dev create <NAME>
 make chien-dev start <NAME> PROJECT=/abs/path/to/repo
 make chien-dev status
 ```
@@ -39,13 +39,14 @@ make chien-dev status
 Quick start (compatible with previous command style):
 
 ```bash
-make chien-dev init <NAME>
+make chien-dev create <NAME>
 make chien-dev start <NAME> PROJECT=/abs/path/to/repo
 ```
 
 Behavior:
 
-- `make chien-dev init <name>`: create a named environment (name is required)
+- `make chien-dev help`: show command usage and examples
+- `make chien-dev create <name>`: create a named environment (name is required)
 - `make chien-dev start <name> PROJECT=/abs/path/to/repo`: start that environment and mount target project to `/workspace`
 - `make chien-dev status`: show all environment statuses
 - `make chien-dev status <name>`: show one environment status
@@ -53,13 +54,13 @@ Behavior:
 
 Available subcommands:
 
-- `start <name>`: initialize (if needed) and start a named environment (`PROJECT` can mount a target project directory to `/workspace`)
-- `init <name>`: interactive initialization and file generation for a named environment
-- `stop <name>`: stop one named environment
+- `start <name>`: create (if needed) and start a named environment (`PROJECT` can mount a target project directory to `/workspace`)
+- `create <name>`: interactive setup and file generation for a named environment
+- `stop <name>`: stop one named environment (name is required)
 - `status [name]`: show all statuses or one named environment
 - `shell <name>`: enter workspace container bash for one named environment
 - `doctor`: check docker / compose / make
-- `clean [name]`: remove one named environment, or all when name is omitted
+- `clean <name>`: remove one named environment only (name is required, and the environment must be stopped first)
 
 ## Enter Environment and Test
 
@@ -87,7 +88,7 @@ You can also open this repository with a Dev Container in Cursor/VS Code:
 ## TODO
 
 - [x] Define naming convention (repo/CLI/config)
-- [x] Implement MVP command skeleton (`start/init/stop/status/doctor/clean`)
+- [x] Implement MVP command skeleton (`start/create/stop/status/doctor/clean`)
 - [x] Add interactive menu to generate `chien-dev.yaml`
 - [x] Generate `.devcontainer` and `docker-compose.yml`
 - [x] Add README basic usage and pre-start checklist

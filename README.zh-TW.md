@@ -21,7 +21,7 @@
 
 ## 支援功能（MVP）
 
-- 互動式初始化（選擇 Ubuntu 版本、語言組合、服務與環境名稱）
+- 互動式建立環境（選擇 Ubuntu 版本、語言組合、服務與環境名稱）
 - 依環境名稱產生檔案到 `generated/envs/<name>/`
 - 啟動、停止、狀態檢查、環境檢測、清理
 
@@ -31,7 +31,7 @@
 
 ```bash
 make chien-dev doctor
-make chien-dev init <NAME>
+make chien-dev create <NAME>
 make chien-dev start <NAME> PROJECT=/abs/path/to/repo
 make chien-dev status
 ```
@@ -39,13 +39,14 @@ make chien-dev status
 快速啟動（相容舊指令寫法）：
 
 ```bash
-make chien-dev init <NAME>
+make chien-dev create <NAME>
 make chien-dev start <NAME> PROJECT=/abs/path/to/repo
 ```
 
 行為說明：
 
-- `make chien-dev init <name>`：建立命名環境（必填名稱）
+- `make chien-dev help`: 說明操作以及介紹指令
+- `make chien-dev create <name>`：建立命名環境（必填名稱）
 - `make chien-dev start <name> PROJECT=/abs/path/to/repo`：啟動指定環境並掛載目標專案到 `/workspace`
 - `make chien-dev status`：列出所有環境狀態
 - `make chien-dev status <name>`：查看單一環境狀態
@@ -54,12 +55,12 @@ make chien-dev start <NAME> PROJECT=/abs/path/to/repo
 可用子命令：
 
 - `start <name>`：初始化（若尚未有設定）並啟動命名環境（可用 `PROJECT` 把目標專案目錄掛載到 `/workspace`）
-- `init <name>`：為命名環境做互動式初始化與檔案產生
-- `stop <name>`：停止指定命名環境
+- `create <name>`：為命名環境做互動式建立與檔案產生
+- `stop <name>`：停止指定命名環境（必須帶名稱）
 - `status [name]`：查看全部環境狀態或單一環境
 - `shell <name>`：進入指定命名環境的 workspace 容器 bash
 - `doctor`：檢查 docker / compose / make
-- `clean [name]`：清除單一命名環境；若不帶名稱則清除全部環境
+- `clean <name>`：只清除指定命名環境（必須帶名稱，且需先 stop，避免誤刪全部環境）
 
 ## 進入環境與測試
 
@@ -88,7 +89,7 @@ git --version
 ## TODO
 
 - [x] 建立專案命名約定（repo/CLI/config）
-- [x] 完成 MVP 指令骨架（`start/init/stop/status/doctor/clean`）
+- [x] 完成 MVP 指令骨架（`start/create/stop/status/doctor/clean`）
 - [x] 完成互動式選單並可產生 `chien-dev.yaml`
 - [x] 生成 `.devcontainer` 與 `docker-compose.yml`
 - [x] 補齊 README 基本用法與啟動前準備
