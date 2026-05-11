@@ -84,6 +84,16 @@ git --version
 2. 選擇 `Dev Containers: Reopen in Container` (先在 extension 安裝 Dev Containers)
 3. 在內建 terminal 執行相同 smoke test 指令
 
+## 程式碼結構
+
+`scripts/` 現在依職責拆分，方便維護：
+
+- `scripts/chien-dev`：薄入口（載入模組 + 指令分派）
+- `scripts/commands/`：各子命令處理（`create/start/stop/status/shell/doctor/clean`）
+- `scripts/core/`：共用路徑與參數驗證
+- `scripts/generators/`：設定檔產生器（`chien-dev.yaml`、`.devcontainer`、compose）
+- `scripts/modules/`：共用執行模組（互動提示、docker helper、status 輸出、help 文字）
+
 
 
 ## TODO

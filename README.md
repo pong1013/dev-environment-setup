@@ -84,6 +84,16 @@ You can also open this repository with a Dev Container in Cursor/VS Code:
 2. Select `Dev Containers: Reopen in Container`(Need Dev Containers Extension)
 3. Run the same smoke test commands in the integrated terminal
 
+## Codebase Structure
+
+`scripts/` is now split by responsibility to keep the CLI maintainable:
+
+- `scripts/chien-dev`: thin entrypoint (module loading + command dispatch)
+- `scripts/commands/`: command handlers (`create/start/stop/status/shell/doctor/clean`)
+- `scripts/core/`: shared paths and validation helpers
+- `scripts/generators/`: generated file renderers (`chien-dev.yaml`, `.devcontainer`, compose)
+- `scripts/modules/`: shared runtime modules (prompt, docker helpers, status output, help text)
+
 
 ## TODO
 
