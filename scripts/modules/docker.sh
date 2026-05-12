@@ -2,11 +2,11 @@
 
 ensure_dependencies() {
   if ! command -v docker >/dev/null 2>&1; then
-    echo "Error: docker not found. Please install Docker Desktop first."
+    log_error "docker not found. Please install Docker Desktop first."
     exit 1
   fi
   if ! docker compose version >/dev/null 2>&1; then
-    echo "Error: docker compose is unavailable. Please update Docker."
+    log_error "docker compose is unavailable. Please update Docker."
     exit 1
   fi
 }

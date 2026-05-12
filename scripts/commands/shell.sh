@@ -9,7 +9,7 @@ do_shell() {
   compose_file="$(compose_file_for "${env_name}")"
 
   if [[ ! -f "${compose_file}" ]]; then
-    echo "Environment '${env_name}' not found. Run: make chien-dev create ${env_name}"
+    log_error "Environment '${env_name}' not found. Run: make chien-dev create ${env_name}"
     exit 1
   fi
 

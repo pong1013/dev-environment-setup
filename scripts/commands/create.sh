@@ -51,7 +51,7 @@ do_create() {
   render_compose "${compose_file}" "${ROOT_DIR}" "${include_pg}" "${include_redis}"
 
   echo ""
-  echo "Generated environment: ${env_name}"
+  log_success "Generated environment: ${env_name}"
   echo "  - ${config_file}"
   echo "  - ${devcontainer_dir}/Dockerfile"
   echo "  - ${devcontainer_dir}/devcontainer.json"

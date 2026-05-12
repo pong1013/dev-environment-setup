@@ -14,13 +14,13 @@ do_status() {
     if [[ -f "${compose_file}" ]]; then
       print_env_status_table "${env_name}" "${compose_file}"
     else
-      echo "Environment '${env_name}' not found. Run: make chien-dev create ${env_name}"
+      log_warn "Environment '${env_name}' not found. Run: make chien-dev create ${env_name}"
     fi
     return
   fi
 
   if [[ ! -d "${ENVS_DIR}" ]]; then
-    echo "No environments found. Run: make chien-dev create <name>"
+    log_info "No environments found. Run: make chien-dev create <name>"
     return
   fi
 
@@ -37,6 +37,6 @@ do_status() {
   done
 
   if [[ "${found_any}" == "false" ]]; then
-    echo "No environments found. Run: make chien-dev create <name>"
+    log_info "No environments found. Run: make chien-dev create <name>"
   fi
 }

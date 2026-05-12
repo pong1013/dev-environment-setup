@@ -6,8 +6,8 @@ do_stop() {
   ensure_dependencies
   env_name="${env_name_arg}"
   if [[ -z "${env_name}" ]]; then
-    echo "Error: stop requires an environment name (prevents stopping every stack by mistake)."
-    echo "Usage: make chien-dev stop <name>"
+    log_error "stop requires an environment name (prevents stopping every stack by mistake)."
+    log_info "Usage: make chien-dev stop <name>"
     exit 1
   fi
   validate_env_name "${env_name}"
@@ -16,6 +16,6 @@ do_stop() {
   if [[ -f "${compose_file}" ]]; then
     compose_run "${env_name}" "${compose_file}" down
   else
-    echo "Environment '${env_name}' not found. Nothing to stop."
+    log_warn "Environment '${env_name}' not found. Nothing to stop."
   fi
 }

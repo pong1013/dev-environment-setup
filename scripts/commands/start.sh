@@ -13,16 +13,16 @@ do_start() {
   compose_file="$(compose_file_for "${env_name}")"
 
   if [[ ! -d "${env_dir}" || ! -f "${compose_file}" ]]; then
-    echo "Environment '${env_name}' not found. Creating it now..."
+    log_warn "Environment '${env_name}' not found. Creating it now..."
     do_create
   fi
   compose_file="$(compose_file_for "${env_name}")"
-  echo "Starting development environment: ${env_name}"
+  log_info "Starting development environment: ${env_name}"
   if [[ -n "${project_path}" ]]; then
-    echo "Mounting project path: ${project_path}"
+    log_info "Mounting project path: ${project_path}"
     PROJECT_PATH="${project_path}" compose_run "${env_name}" "${compose_file}" up -d
   else
     compose_run "${env_name}" "${compose_file}" up -d
   fi
-  echo "Done. You can now open this project in a dev container."
+  log_success "You can now open this project in a dev container."
 }

@@ -4,6 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 source "${SCRIPT_DIR}/core/paths.sh"
+source "${SCRIPT_DIR}/modules/log.sh"
 source "${SCRIPT_DIR}/core/validate.sh"
 source "${SCRIPT_DIR}/modules/prompt.sh"
 source "${SCRIPT_DIR}/modules/docker.sh"
@@ -47,8 +48,8 @@ case "${command}" in
     do_clean
     ;;
   *)
-    echo "Unknown command: ${command}"
-    echo "Available commands: start | create | stop | status | doctor | shell | clean | help"
+    log_error "Unknown command: ${command}"
+    log_info "Available commands: start | create | stop | status | doctor | shell | clean | help"
     exit 1
     ;;
 esac
