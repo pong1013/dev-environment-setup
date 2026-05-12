@@ -8,9 +8,33 @@ do_create() {
   local language_option
   local include_go="false"
   local include_node="false"
+  local include_python="false"
+  local include_java="false"
+  local include_php="false"
+  local frontend_option
+  local frontend_framework="none"
+  local db_options_raw
+  local db_option
   local include_pg="false"
+  local include_mysql="false"
+  local include_mongodb="false"
+  local broker_options_raw
+  local broker_option
   local include_redis="false"
+  local include_rabbitmq="false"
+  local include_kafka="false"
   local os_version
+  local go_version="1.23.0"
+  local node_version="20"
+  local python_version="system"
+  local java_version="17"
+  local php_version="system"
+  local pg_version="16"
+  local mysql_version="8"
+  local mongodb_version="7"
+  local redis_version="7"
+  local rabbitmq_version="3-management"
+  local kafka_version="latest"
   local env_dir
   local config_file
   local devcontainer_dir
@@ -19,23 +43,125 @@ do_create() {
   env_name="$(resolve_env_name "${env_name_arg}")"
   validate_env_name "${env_name}"
   os_option="$(prompt_choice "Select OS version:" "ubuntu:22.04" "ubuntu:24.04")"
-  language_options_raw="$(prompt_multi_choice "Select language stack(s):" "Go" "Node")"
+  language_options_raw="$(prompt_multi_choice "Select Backend Language(s):" "Go" "Node.js" "Python" "Java" "PHP")"
   while IFS= read -r language_option; do
     case "${language_option}" in
-      Go)
-        include_go="true"
-        ;;
-      Node)
-        include_node="true"
-        ;;
+      Go) include_go="true" ;;
+      Node.js) include_node="true" ;;
+      Python) include_python="true" ;;
+      Java) include_java="true" ;;
+      PHP) include_php="true" ;;
     esac
   done <<< "${language_options_raw}"
 
-  if prompt_yes_no "Include PostgreSQL service?" "y"; then
-    include_pg="true"
+  frontend_option="$(prompt_choice "Select Frontend Framework:" "None" "React" "Vue")"
+  if [[ "${frontend_option}" != "None" ]]; then
+    frontend_framework="$(echo "${frontend_option}" | tr '[:upper:]' '[:lower:]')"
+    # Force include Node.js if React or Vue is selected
+    include_node="true"
   fi
-  if prompt_yes_no "Include Redis service?" "y"; then
-    include_redis="true"
+
+  db_options_raw="$(prompt_multi_choice "Select Database(s) (e.g. 1+2, or 4 for None):" "PostgreSQL" "MySQL" "MongoDB" "None")"
+  while IFS= read -r db_option; do
+    case "${db_option}" in
+      PostgreSQL) include_pg="true" ;;
+      MySQL) include_mysql="true" ;;
+      MongoDB) include_mongodb="true" ;;
+    esac
+  done <<< "${db_options_raw}"
+
+  broker_options_raw="$(prompt_multi_choice "Select Cache/Message Broker(s) (e.g. 1+2, or 4 for None):" "Redis" "RabbitMQ" "Kafka" "None")"
+  while IFS= read -r broker_option; do
+    case "${broker_option}" in
+      Redis) include_redis="true" ;;
+      RabbitMQ) include_rabbitmq="true" ;;
+      Kafka) include_kafka="true" ;;
+    esac
+  done <<< "${broker_options_raw}"
+
+  local specify_versions="false"
+  if prompt_yes_no "Do you want to specify custom versions for the selected tools? (Default uses LTS/latest)" "n"; then
+    specify_versions="true"
+  fi
+
+  if [[ "${specify_versions}" == "true" ]]; then
+    if [[ "${include_go}" == "true" ]]; then
+      go_version="$(prompt_choice "Select Go version:" "1.23.0" "1.22.0" "Other")"
+      if [[ "${go_version}" == "Other" ]]; then 
+        read -r -p "Enter Go version (e.g. 1.21.0) [default: 1.23.0]: " go_version
+        go_version="${go_version:-1.23.0}"
+      fi
+    fi
+    if [[ "${include_node}" == "true" ]]; then
+      node_version="$(prompt_choice "Select Node.js version:" "22" "20" "18" "Other")"
+      if [[ "${node_version}" == "Other" ]]; then 
+        read -r -p "Enter Node.js version (e.g. 16) [default: 20]: " node_version
+        node_version="${node_version:-20}"
+      fi
+    fi
+    if [[ "${include_python}" == "true" ]]; then
+      python_version="$(prompt_choice "Select Python version:" "3.12" "3.10" "3.8" "Other")"
+      if [[ "${python_version}" == "Other" ]]; then 
+        read -r -p "Enter Python version (e.g. 3.9) [default: system]: " python_version
+        python_version="${python_version:-system}"
+      fi
+    fi
+    if [[ "${include_java}" == "true" ]]; then
+      java_version="$(prompt_choice "Select Java version:" "21" "17" "11" "Other")"
+      if [[ "${java_version}" == "Other" ]]; then 
+        read -r -p "Enter Java version (e.g. 8) [default: 17]: " java_version
+        java_version="${java_version:-17}"
+      fi
+    fi
+    if [[ "${include_php}" == "true" ]]; then
+      php_version="$(prompt_choice "Select PHP version:" "8.3" "8.2" "8.1" "Other")"
+      if [[ "${php_version}" == "Other" ]]; then 
+        read -r -p "Enter PHP version (e.g. 7.4) [default: system]: " php_version
+        php_version="${php_version:-system}"
+      fi
+    fi
+    if [[ "${include_pg}" == "true" ]]; then
+      pg_version="$(prompt_choice "Select PostgreSQL version:" "16" "15" "14" "Other")"
+      if [[ "${pg_version}" == "Other" ]]; then 
+        read -r -p "Enter PostgreSQL version (e.g. 13) [default: 16]: " pg_version
+        pg_version="${pg_version:-16}"
+      fi
+    fi
+    if [[ "${include_mysql}" == "true" ]]; then
+      mysql_version="$(prompt_choice "Select MySQL version:" "8.4" "8.0" "Other")"
+      if [[ "${mysql_version}" == "Other" ]]; then 
+        read -r -p "Enter MySQL version (e.g. 5.7) [default: 8]: " mysql_version
+        mysql_version="${mysql_version:-8}"
+      fi
+    fi
+    if [[ "${include_mongodb}" == "true" ]]; then
+      mongodb_version="$(prompt_choice "Select MongoDB version:" "7" "6" "Other")"
+      if [[ "${mongodb_version}" == "Other" ]]; then 
+        read -r -p "Enter MongoDB version (e.g. 5) [default: 7]: " mongodb_version
+        mongodb_version="${mongodb_version:-7}"
+      fi
+    fi
+    if [[ "${include_redis}" == "true" ]]; then
+      redis_version="$(prompt_choice "Select Redis version:" "7" "6" "Other")"
+      if [[ "${redis_version}" == "Other" ]]; then 
+        read -r -p "Enter Redis version (e.g. 5) [default: 7]: " redis_version
+        redis_version="${redis_version:-7}"
+      fi
+    fi
+    if [[ "${include_rabbitmq}" == "true" ]]; then
+      rabbitmq_version="$(prompt_choice "Select RabbitMQ version:" "3-management" "Other")"
+      if [[ "${rabbitmq_version}" == "Other" ]]; then 
+        read -r -p "Enter RabbitMQ version (e.g. 3.9-management) [default: 3-management]: " rabbitmq_version
+        rabbitmq_version="${rabbitmq_version:-3-management}"
+      fi
+    fi
+    if [[ "${include_kafka}" == "true" ]]; then
+      kafka_version="$(prompt_choice "Select Kafka version:" "latest" "Other")"
+      if [[ "${kafka_version}" == "Other" ]]; then 
+        read -r -p "Enter Kafka version (e.g. 3.4) [default: latest]: " kafka_version
+        kafka_version="${kafka_version:-latest}"
+      fi
+    fi
   fi
 
   os_version="${os_option#ubuntu:}"
@@ -46,9 +172,9 @@ do_create() {
   compose_file="$(compose_file_for "${env_name}")"
   mkdir -p "${env_dir}"
 
-  render_config "${config_file}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_pg}" "${include_redis}"
-  render_devcontainer "${devcontainer_dir}" "${env_name}" "${os_version}" "${include_go}" "${include_node}"
-  render_compose "${compose_file}" "${ROOT_DIR}" "${include_pg}" "${include_redis}"
+  render_config "${config_file}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}"
+  render_devcontainer "${devcontainer_dir}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}"
+  render_compose "${compose_file}" "${ROOT_DIR}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}"
 
   echo ""
   log_success "Generated environment: ${env_name}"
