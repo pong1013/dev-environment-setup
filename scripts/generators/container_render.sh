@@ -34,11 +34,11 @@ render_config() {
   local redis_host_port="${30:-6379}"
   local rabbitmq_host_port="${31:-5672}"
   local kafka_host_port="${32:-9092}"
-
+  local backend_type="${33:-devcontainer}"
   cat > "${target_config_file}" <<EOF
 version: 1
 name: ${env_name}
-backend: devcontainer
+backend: ${backend_type:-devcontainer}
 
 os:
   distro: ubuntu

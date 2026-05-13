@@ -2,27 +2,42 @@
 
 do_start() {
   local env_name
-  local env_dir
-  local compose_file
-  local project_path="${PROJECT:-}"
+  local config_file
+  local backend
   ensure_dependencies
   env_name="${env_name_arg}"
-  validate_env_name "${env_name}"
-  validate_project_path "${project_path}"
-  env_dir="$(env_dir_for "${env_name}")"
-  compose_file="$(compose_file_for "${env_name}")"
+  
+  if [[ -z "${env_name}" ]]; then
+    log_error "Usage: make chien-dev start <name> [PROJECT=/abs/path/to/repo]"
+    exit 1
+  fi
 
-  if [[ ! -d "${env_dir}" || ! -f "${compose_file}" ]]; then
-    log_warn "Environment '${env_name}' not found. Creating it now..."
+  validate_env_name "${env_name}"
+  config_file="$(config_file_for "${env_name}")"
+
+  if [[ ! -f "${config_file}" ]]; then
+    log_warn "Environment '${env_name}' not found. Creating it first..."
     do_create
+    # Reload config after creation
+    config_file="$(config_file_for "${env_name}")"
   fi
-  compose_file="$(compose_file_for "${env_name}")"
-  log_info "Starting development environment: ${env_name}"
-  if [[ -n "${project_path}" ]]; then
-    log_info "Mounting project path: ${project_path}"
-    PROJECT_PATH="${project_path}" compose_run "${env_name}" "${compose_file}" up -d
+
+  backend=$(grep "backend:" "${config_file}" | awk '{print $2}')
+
+  if [[ "${backend}" == "vm" ]]; then
+    log_info "Starting VM environment: ${env_name}"
+    multipass start "${env_name}"
+    local ip=$(vm_get_ip "${env_name}")
+    log_success "VM '${env_name}' is running at ${ip}"
   else
-    compose_run "${env_name}" "${compose_file}" up -d
+    local compose_file="$(compose_file_for "${env_name}")"
+    if [[ ! -f "${compose_file}" ]]; then
+      log_error "Compose file missing for environment: ${env_name}"
+      exit 1
+    fi
+
+    log_info "Starting development environment: ${env_name}"
+    # Use env variable to pass project path if provided via CLI
+    PROJECT_PATH="${PROJECT:-}" docker compose -f "${compose_file}" up -d
   fi
-  log_success "You can now open this project in a dev container."
 }

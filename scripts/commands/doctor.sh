@@ -4,12 +4,16 @@ do_doctor() {
   log_info "Running environment checks..."
   
   # 1. Tools presence
-  local tools=("docker" "make" "git" "lsof")
+  local tools=("docker" "make" "git" "lsof" "multipass")
   for tool in "${tools[@]}"; do
     if command -v "$tool" >/dev/null 2>&1; then
       log_success "Tool '$tool' is installed."
     else
-      log_error "Tool '$tool' is MISSING."
+      if [[ "$tool" == "multipass" ]]; then
+        log_warn "Tool 'multipass' is MISSING (optional, required for ENV=vm)."
+      else
+        log_error "Tool '$tool' is MISSING."
+      fi
     fi
   done
 

@@ -2,20 +2,31 @@
 
 do_stop() {
   local env_name
-  local compose_file
+  local config_file
+  local backend
   ensure_dependencies
   env_name="${env_name_arg}"
-  if [[ -z "${env_name}" ]]; then
-    log_error "stop requires an environment name (prevents stopping every stack by mistake)."
-    log_info "Usage: make chien-dev stop <name>"
-    exit 1
-  fi
   validate_env_name "${env_name}"
-  compose_file="$(compose_file_for "${env_name}")"
 
-  if [[ -f "${compose_file}" ]]; then
-    compose_run "${env_name}" "${compose_file}" down
-  else
+  config_file="$(config_file_for "${env_name}")"
+  if [[ ! -f "${config_file}" ]]; then
     log_warn "Environment '${env_name}' not found. Nothing to stop."
+    return
+  fi
+
+  backend=$(grep "backend:" "${config_file}" | awk '{print $2}')
+
+  if [[ "${backend}" == "vm" ]]; then
+    vm_stop "${env_name}"
+    log_success "VM environment '${env_name}' stopped."
+  else
+    local compose_file="$(compose_file_for "${env_name}")"
+    if [[ -f "${compose_file}" ]]; then
+      log_info "Stopping development environment: ${env_name}"
+      docker compose -f "${compose_file}" down
+      log_success "Environment '${env_name}' stopped."
+    else
+      log_warn "Compose file for '${env_name}' not found. Nothing to stop."
+    fi
   fi
 }

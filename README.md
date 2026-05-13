@@ -2,7 +2,7 @@
 
 [English](./README.md) | [繁體中文](./README.zh-TW.md)
 
-A standardized development environment scaffold. Use named environments (for example `go-dev`, `node-dev`) to generate and manage DevContainer-based setups.
+A standardized development environment scaffold. Supports both **DevContainer** (Docker-based) and **Virtual Machine** (Multipass-based) backends to generate and manage isolated development setups.
 
 ## Before Start
 
@@ -10,18 +10,21 @@ Complete the following prerequisites before your first run:
 
 1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) (with Docker Compose v2)
 2. Start Docker Desktop and make sure Docker daemon is running
-3. Verify required commands
+3. **(Optional)** Install [Multipass](https://multipass.run/) if you plan to use VM-based environments
+4. Verify required commands
    ```bash
    docker --version
    docker compose version
    make --version
+   multipass version # optional
    ```
 
 If you are using Linux, make sure `docker`, `docker compose`, and `make` are installed, and your current user can run Docker commands without `sudo`.
 
 ## MVP Features
 
-- Interactive environment creation (Ubuntu version, language stacks, services, and environment name)
+- Interactive environment creation (Backend type, Ubuntu version, language stacks, services, and environment name)
+- Supports dual backends: **DevContainer** (Docker) and **Virtual Machine** (Multipass)
 - Generates per-environment files under `generated/envs/<name>/`
 - Start, stop, status, doctor checks, and cleanup commands
 
@@ -36,30 +39,36 @@ make chien-dev start <NAME> PROJECT=/abs/path/to/repo
 make chien-dev status
 ```
 
-Quick start (compatible with previous command style):
+### VM Backend Usage
+
+To create a Virtual Machine environment instead of a DevContainer:
 
 ```bash
-make chien-dev create <NAME>
-make chien-dev start <NAME> PROJECT=/abs/path/to/repo
+ENV=vm make chien-dev create my-vm
 ```
 
-Non-interactive mode (pass any variable below to skip all prompts):
+Once created, you can see the VM IP and login instructions using `make chien-dev status`.
+
+### Non-interactive Mode
+
+Pass any variable below to skip all prompts:
 
 ```bash
-# Install only Go (nothing else)
+# Create a VM environment
+ENV=vm make chien-dev create my-node
+
+# Install only Go in a DevContainer
 make chien-dev create my-dev LANGS=go
 
 # Specify languages and database
 make chien-dev create my-dev LANGS=python,java DB=postgres
-
-# Full specification with version overrides
-make chien-dev create ci-env LANGS=go,node FRONTEND=react DB=postgres BROKER=redis GO_VER=1.22.0 PG_VER=15
 ```
 
 Supported keys for non-interactive mode:
 
 | Key | Values | Default |
 |-----|--------|---------|
+| `ENV` | `devcontainer`, `vm` | `devcontainer` |
 | `OS` | `22.04`, `24.04` | `22.04` |
 | `LANGS` | `go`, `node`, `python`, `java`, `php` (comma-separated) | none |
 | `FRONTEND` | `none`, `react`, `vue` | `none` |
@@ -70,57 +79,19 @@ Supported keys for non-interactive mode:
 
 > **Note**: Use `LANGS` (not `LANG`) to avoid conflict with the system `LANG` variable.
 
-Behavior:
-
-- `make chien-dev help`: show command usage and examples
-- `make chien-dev create <name>`: create a named environment (name is required)
-- `make chien-dev start <name> PROJECT=/abs/path/to/repo`: start that environment and mount target project to `/workspace`
-- `make chien-dev status`: show all environment statuses
-- `make chien-dev status <name>`: show one environment status
-- `make chien-dev shell <name>`: open bash in the workspace container
-
-Available subcommands:
-
-- `start <name>`: create (if needed) and start a named environment (`PROJECT` can mount a target project directory to `/workspace`)
-- `create <name>`: interactive setup and file generation for a named environment
-- `stop <name>`: stop one named environment (name is required)
-- `status [name]`: show all statuses or one named environment
-- `shell <name>`: enter workspace container bash for one named environment
-- `doctor`: check docker / compose / make
-- `clean <name>`: remove one named environment only (name is required, and the environment must be stopped first)
-
-## Enter Environment and Test
-
-After `make chien-dev start <NAME> PROJECT=/abs/path/to/repo`, you can enter the workspace container:
-
-```bash
-make chien-dev shell <NAME>
-```
-
-Run a quick smoke test inside the container:
-
-```bash
-go version
-node --version
-git --version
-```
-
-You can also open this repository with a Dev Container in Cursor/VS Code:
-
-1. Open command palette(cmd + Shift + P)
-2. Select `Dev Containers: Reopen in Container`(Need Dev Containers Extension)
-3. Run the same smoke test commands in the integrated terminal
-
 ## Codebase Structure
 
-`scripts/` is now split by responsibility to keep the CLI maintainable:
+`scripts/` is organized by backend and responsibility:
 
-- `scripts/chien-dev`: thin entrypoint (module loading + command dispatch)
 - `scripts/commands/`: command handlers (`create/start/stop/status/shell/doctor/clean`)
+- `scripts/generators/`: backend-specific renderers
+  - `container_render.sh`: DevContainer & Docker Compose
+  - `vm_render.sh`: Cloud-init for Multipass
+- `scripts/modules/`: shared runtime modules
+  - `docker.sh`: Docker/Compose helpers
+  - `vm.sh`: Multipass helpers
+  - `network.sh`: Port scanning and detection
 - `scripts/core/`: shared paths and validation helpers
-- `scripts/generators/`: generated file renderers (`chien-dev.yaml`, `.devcontainer`, compose)
-- `scripts/modules/`: shared runtime modules (prompt, docker helpers, status output, help text)
-
 
 ## TODO
 
@@ -133,4 +104,5 @@ You can also open this repository with a Dev Container in Cursor/VS Code:
 - [x] Add customizable environment name (used for dev container/service naming in startup)
 - [x] Improve `doctor` (port conflicts, daemon status, permissions)
 - [ ] Add tests and CI (shellcheck + smoke tests)
-- [ ] Phase 2: add VM backend (e.g. Multipass/Vagrant) — target use case: provision fake-GPU VMs and register them as Kubernetes nodes
+- [x] Phase 2: add VM backend (Multipass)
+- [ ] Phase 2.1: provision fake-GPU VMs and register them as Kubernetes nodes
