@@ -5,13 +5,13 @@ log_info() {
 }
 
 log_warn() {
-  printf "warn: %s\n" "$*" >&2
+  printf "\033[33m! warn:\033[0m %s\n" "$*" >&2
 }
 
 log_error() {
-  printf "error: %s\n" "$*" >&2
+  printf "\033[31m✘ error:\033[0m %s\n" "$*" >&2
 }
 
 log_success() {
-  log_info "$*"
+  printf "\033[32m✔ success:\033[0m %s\n" "$*"
 }

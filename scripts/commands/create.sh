@@ -76,7 +76,7 @@ do_create() {
   local mongodb_version="7"
   local redis_version="7"
   local rabbitmq_version="3-management"
-  local kafka_version="latest"
+  local kafka_version="3.7.0"
   local env_dir
   local config_file
   local devcontainer_dir
@@ -86,8 +86,6 @@ do_create() {
   validate_env_name "${env_name}"
 
   # ── Non-interactive mode ──────────────────────────────────────────────────
-  # Triggered when any of LANGS / FRONTEND / DB / BROKER / OS is set.
-  # Note: we use LANGS (not LANG) to avoid conflict with the system LANG=en_US.UTF-8 variable.
   if [[ -n "${LANGS:-}${FRONTEND:-}${DB:-}${BROKER:-}${OS:-}" ]]; then
     log_info "Non-interactive mode: reading from environment variables."
 
@@ -98,12 +96,10 @@ do_create() {
     [[ -n "${DB:-}" ]]       && _parse_db      "${DB}"
     [[ -n "${BROKER:-}" ]]   && _parse_broker  "${BROKER}"
 
-    # If a frontend framework is chosen, Node.js must be included
     if [[ "${frontend_framework}" != "none" ]]; then
       include_node="true"
     fi
 
-    # Read version overrides (fall back to defaults set above)
     go_version="${GO_VER:-${go_version}}"
     node_version="${NODE_VER:-${node_version}}"
     python_version="${PYTHON_VER:-${python_version}}"
@@ -259,9 +255,23 @@ do_create() {
   compose_file="$(compose_file_for "${env_name}")"
   mkdir -p "${env_dir}"
 
-  render_config "${config_file}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}"
+  local pg_host_port=5432
+  local mysql_host_port=3306
+  local mongodb_host_port=27017
+  local redis_host_port=6379
+  local rabbitmq_host_port=5672
+  local kafka_host_port=9092
+
+  [[ "${include_pg}" == "true" ]] && pg_host_port=$(find_available_port 5432)
+  [[ "${include_mysql}" == "true" ]] && mysql_host_port=$(find_available_port 3306)
+  [[ "${include_mongodb}" == "true" ]] && mongodb_host_port=$(find_available_port 27017)
+  [[ "${include_redis}" == "true" ]] && redis_host_port=$(find_available_port 6379)
+  [[ "${include_rabbitmq}" == "true" ]] && rabbitmq_host_port=$(find_available_port 5672)
+  [[ "${include_kafka}" == "true" ]] && kafka_host_port=$(find_available_port 9092)
+
+  render_config "${config_file}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}" "${pg_host_port}" "${mysql_host_port}" "${mongodb_host_port}" "${redis_host_port}" "${rabbitmq_host_port}" "${kafka_host_port}"
   render_devcontainer "${devcontainer_dir}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}"
-  render_compose "${compose_file}" "${ROOT_DIR}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}"
+  render_compose "${compose_file}" "${ROOT_DIR}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}" "${pg_host_port}" "${mysql_host_port}" "${mongodb_host_port}" "${redis_host_port}" "${rabbitmq_host_port}" "${kafka_host_port}"
 
   echo ""
   log_success "Generated environment: ${env_name}"

@@ -28,6 +28,13 @@ render_config() {
   local rabbitmq_version="${25}"
   local kafka_version="${26}"
 
+  local pg_host_port="${27:-5432}"
+  local mysql_host_port="${28:-3306}"
+  local mongodb_host_port="${29:-27017}"
+  local redis_host_port="${30:-6379}"
+  local rabbitmq_host_port="${31:-5672}"
+  local kafka_host_port="${32:-9092}"
+
   cat > "${target_config_file}" <<EOF
 version: 1
 name: ${env_name}
@@ -66,26 +73,32 @@ services:
     enabled: ${include_pg}
     version: "${pg_version}"
     port: 5432
+    host_port: ${pg_host_port}
   mysql:
     enabled: ${include_mysql}
     version: "${mysql_version}"
     port: 3306
+    host_port: ${mysql_host_port}
   mongodb:
     enabled: ${include_mongodb}
     version: "${mongodb_version}"
     port: 27017
+    host_port: ${mongodb_host_port}
   redis:
     enabled: ${include_redis}
     version: "${redis_version}"
     port: 6379
+    host_port: ${redis_host_port}
   rabbitmq:
     enabled: ${include_rabbitmq}
     version: "${rabbitmq_version}"
     port: 5672
+    host_port: ${rabbitmq_host_port}
   kafka:
     enabled: ${include_kafka}
     version: "${kafka_version}"
     port: 9092
+    host_port: ${kafka_host_port}
 EOF
 }
 
@@ -233,6 +246,13 @@ render_compose() {
   local rabbitmq_version="${13}"
   local kafka_version="${14}"
 
+  local pg_host_port="${15:-5432}"
+  local mysql_host_port="${16:-3306}"
+  local mongodb_host_port="${17:-27017}"
+  local redis_host_port="${18:-6379}"
+  local rabbitmq_host_port="${19:-5672}"
+  local kafka_host_port="${20:-9092}"
+
   cat > "${target_compose_file}" <<EOF
 services:
   workspace:
@@ -253,7 +273,7 @@ EOF
       POSTGRES_PASSWORD: dev
       POSTGRES_DB: devdb
     ports:
-      - "5432:5432"
+      - "${pg_host_port}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 EOF
@@ -269,7 +289,7 @@ EOF
       MYSQL_USER: dev
       MYSQL_PASSWORD: dev
     ports:
-      - "3306:3306"
+      - "${mysql_host_port}:3306"
     volumes:
       - mysql-data:/var/lib/mysql
 EOF
@@ -284,7 +304,7 @@ EOF
       MONGO_INITDB_ROOT_PASSWORD: root
       MONGO_INITDB_DATABASE: devdb
     ports:
-      - "27017:27017"
+      - "${mongodb_host_port}:27017"
     volumes:
       - mongodb-data:/data/db
 EOF
@@ -295,7 +315,7 @@ EOF
   redis:
     image: redis:${redis_version}
     ports:
-      - "6379:6379"
+      - "${redis_host_port}:6379"
     volumes:
       - redis-data:/data
 EOF
@@ -309,7 +329,7 @@ EOF
       RABBITMQ_DEFAULT_USER: dev
       RABBITMQ_DEFAULT_PASS: dev
     ports:
-      - "5672:5672"
+      - "${rabbitmq_host_port}:5672"
       - "15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
@@ -319,18 +339,22 @@ EOF
   if [[ "${include_kafka}" == "true" ]]; then
     cat >> "${target_compose_file}" <<EOF
   kafka:
-    image: bitnami/kafka:${kafka_version}
+    image: apache/kafka:${kafka_version}
     environment:
-      KAFKA_CFG_NODE_ID: 0
-      KAFKA_CFG_PROCESS_ROLES: controller,broker
-      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
-      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_NODE_ID: 0
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
     ports:
-      - "9092:9092"
+      - "${kafka_host_port}:9092"
     volumes:
-      - kafka-data:/bitnami/kafka
+      - kafka-data:/var/lib/kafka/data
 EOF
   fi
 

@@ -131,6 +131,6 @@ You can also open this repository with a Dev Container in Cursor/VS Code:
 - [x] Add README basic usage and pre-start checklist
 - [x] Add non-interactive mode (`LANGS=go,node DB=postgres make chien-dev create <name>`)
 - [x] Add customizable environment name (used for dev container/service naming in startup)
-- [ ] Improve `doctor` (port conflicts, daemon status, permissions)
+- [x] Improve `doctor` (port conflicts, daemon status, permissions)
 - [ ] Add tests and CI (shellcheck + smoke tests)
 - [ ] Phase 2: add VM backend (e.g. Multipass/Vagrant) — target use case: provision fake-GPU VMs and register them as Kubernetes nodes

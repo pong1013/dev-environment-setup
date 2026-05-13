@@ -132,6 +132,6 @@ git --version
 - [x] 補齊 README 基本用法與啟動前準備
 - [x] 擴充非互動模式（`LANGS=go,node DB=postgres make chien-dev create <name>`）
 - [x] 新增可自訂環境名稱（啟動時用於 dev container / 服務命名）
-- [ ] 增強 `doctor`（port 衝突、daemon 狀態、權限檢查）
+- [x] 增強 `doctor`（port 衝突、daemon 狀態、權限檢查）
 - [ ] 建立測試與 CI（shellcheck + smoke tests）
 - [ ] Phase 2：加入 VM backend（例如 Multipass/Vagrant）— 目標用途：建立 fake-GPU VM 並作為 Kubernetes node 加入 cluster
