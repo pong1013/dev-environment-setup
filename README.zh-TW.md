@@ -105,9 +105,6 @@ git --version
 - [x] 補齊 README 基本用法與啟動前準備
 - [ ] 擴充非互動模式（例如：`make chien-dev start OS=ubuntu:22.04 SERVICES=postgres,redis ENV_NAME=my-dev-env`）
 - [x] 新增可自訂環境名稱（啟動時用於 dev container / 服務命名）
-- [ ] 設定優先序規則（CLI > `chien-dev.yaml` > 預設值）
-- [ ] 將語言與 feature 模組化（profiles/features 檔案）
-- [ ] 補 `project init`（`.env.example`、基本 Make targets）
 - [ ] 增強 `doctor`（port 衝突、daemon 狀態、權限檢查）
 - [ ] 建立測試與 CI（shellcheck + smoke tests）
-- [ ] Phase 2：加入 VM backend（例如 Multipass/Vagrant）
+- [ ] Phase 2：加入 VM backend（例如 Multipass/Vagrant）— 目標用途：建立 fake-GPU VM 並作為 Kubernetes node 加入 cluster

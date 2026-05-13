@@ -104,9 +104,6 @@ You can also open this repository with a Dev Container in Cursor/VS Code:
 - [x] Add README basic usage and pre-start checklist
 - [ ] Add non-interactive mode (for example: `make chien-dev start OS=ubuntu:22.04 SERVICES=postgres,redis ENV_NAME=my-dev-env`)
 - [x] Add customizable environment name (used for dev container/service naming in startup)
-- [ ] Implement config priority rule (CLI > `chien-dev.yaml` > defaults)
-- [ ] Modularize language and feature definitions (profiles/features files)
-- [ ] Add `project init` scaffolding (`.env.example`, base Make targets)
 - [ ] Improve `doctor` (port conflicts, daemon status, permissions)
 - [ ] Add tests and CI (shellcheck + smoke tests)
-- [ ] Phase 2: add VM backend (for example Multipass/Vagrant)
+- [ ] Phase 2: add VM backend (e.g. Multipass/Vagrant) — target use case: provision fake-GPU VMs and register them as Kubernetes nodes
