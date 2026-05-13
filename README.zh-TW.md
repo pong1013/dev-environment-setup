@@ -105,4 +105,3 @@ make chien-dev create my-dev LANGS=python,java DB=postgres
 - [x] 增強 `doctor`（port 衝突、daemon 狀態、權限檢查）
 - [ ] 建立測試與 CI（shellcheck + smoke tests）
 - [x] Phase 2：加入 VM backend (Multipass)
-- [ ] Phase 2.1：建立 fake-GPU VM 並作為 Kubernetes node 加入 cluster

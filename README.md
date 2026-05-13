@@ -105,4 +105,3 @@ Supported keys for non-interactive mode:
 - [x] Improve `doctor` (port conflicts, daemon status, permissions)
 - [ ] Add tests and CI (shellcheck + smoke tests)
 - [x] Phase 2: add VM backend (Multipass)
-- [ ] Phase 2.1: provision fake-GPU VMs and register them as Kubernetes nodes
