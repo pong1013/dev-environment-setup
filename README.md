@@ -43,6 +43,33 @@ make chien-dev create <NAME>
 make chien-dev start <NAME> PROJECT=/abs/path/to/repo
 ```
 
+Non-interactive mode (pass any variable below to skip all prompts):
+
+```bash
+# Install only Go (nothing else)
+make chien-dev create my-dev LANGS=go
+
+# Specify languages and database
+make chien-dev create my-dev LANGS=python,java DB=postgres
+
+# Full specification with version overrides
+make chien-dev create ci-env LANGS=go,node FRONTEND=react DB=postgres BROKER=redis GO_VER=1.22.0 PG_VER=15
+```
+
+Supported keys for non-interactive mode:
+
+| Key | Values | Default |
+|-----|--------|---------|
+| `OS` | `22.04`, `24.04` | `22.04` |
+| `LANGS` | `go`, `node`, `python`, `java`, `php` (comma-separated) | none |
+| `FRONTEND` | `none`, `react`, `vue` | `none` |
+| `DB` | `postgres`, `mysql`, `mongodb` (comma-separated) | none |
+| `BROKER` | `redis`, `rabbitmq`, `kafka` (comma-separated) | none |
+| `GO_VER`, `NODE_VER`, `PYTHON_VER`, `JAVA_VER`, `PHP_VER` | version strings | LTS defaults |
+| `PG_VER`, `MYSQL_VER`, `MONGODB_VER`, `REDIS_VER`, `RABBITMQ_VER`, `KAFKA_VER` | version strings | LTS defaults |
+
+> **Note**: Use `LANGS` (not `LANG`) to avoid conflict with the system `LANG` variable.
+
 Behavior:
 
 - `make chien-dev help`: show command usage and examples
@@ -102,7 +129,7 @@ You can also open this repository with a Dev Container in Cursor/VS Code:
 - [x] Add interactive menu to generate `chien-dev.yaml`
 - [x] Generate `.devcontainer` and `docker-compose.yml`
 - [x] Add README basic usage and pre-start checklist
-- [ ] Add non-interactive mode (for example: `make chien-dev start OS=ubuntu:22.04 SERVICES=postgres,redis ENV_NAME=my-dev-env`)
+- [x] Add non-interactive mode (`LANGS=go,node DB=postgres make chien-dev create <name>`)
 - [x] Add customizable environment name (used for dev container/service naming in startup)
 - [ ] Improve `doctor` (port conflicts, daemon status, permissions)
 - [ ] Add tests and CI (shellcheck + smoke tests)

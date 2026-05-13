@@ -43,6 +43,33 @@ make chien-dev create <NAME>
 make chien-dev start <NAME> PROJECT=/abs/path/to/repo
 ```
 
+非互動模式（帶任意以下變數即跳過所有提示）：
+
+```bash
+# 只安裝 Go（其他都不安裝）
+make chien-dev create my-dev LANGS=go
+
+# 指定語言與資料庫
+make chien-dev create my-dev LANGS=python,java DB=postgres
+
+# 完整指定 + 版本覆蓋
+make chien-dev create ci-env LANGS=go,node FRONTEND=react DB=postgres BROKER=redis GO_VER=1.22.0 PG_VER=15
+```
+
+非互動模式支援的 KEY 一覽：
+
+| Key | 可選值 | 未指定時 |
+|-----|--------|----------|
+| `OS` | `22.04`, `24.04` | `22.04` |
+| `LANGS` | `go`, `node`, `python`, `java`, `php`（逗號分隔） | 不安裝 |
+| `FRONTEND` | `none`, `react`, `vue` | `none` |
+| `DB` | `postgres`, `mysql`, `mongodb`（逗號分隔） | 不安裝 |
+| `BROKER` | `redis`, `rabbitmq`, `kafka`（逗號分隔） | 不安裝 |
+| `GO_VER`, `NODE_VER`, `PYTHON_VER`, `JAVA_VER`, `PHP_VER` | 版本字串 | LTS 預設值 |
+| `PG_VER`, `MYSQL_VER`, `MONGODB_VER`, `REDIS_VER`, `RABBITMQ_VER`, `KAFKA_VER` | 版本字串 | LTS 預設值 |
+
+> **注意**：請使用 `LANGS`（不是 `LANG`），以避免和系統的 `LANG` 環境變數衝突。
+
 行為說明：
 
 - `make chien-dev help`: 說明操作以及介紹指令
@@ -103,7 +130,7 @@ git --version
 - [x] 完成互動式選單並可產生 `chien-dev.yaml`
 - [x] 生成 `.devcontainer` 與 `docker-compose.yml`
 - [x] 補齊 README 基本用法與啟動前準備
-- [ ] 擴充非互動模式（例如：`make chien-dev start OS=ubuntu:22.04 SERVICES=postgres,redis ENV_NAME=my-dev-env`）
+- [x] 擴充非互動模式（`LANGS=go,node DB=postgres make chien-dev create <name>`）
 - [x] 新增可自訂環境名稱（啟動時用於 dev container / 服務命名）
 - [ ] 增強 `doctor`（port 衝突、daemon 狀態、權限檢查）
 - [ ] 建立測試與 CI（shellcheck + smoke tests）
