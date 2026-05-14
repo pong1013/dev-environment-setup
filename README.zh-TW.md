@@ -1,107 +1,107 @@
-# dev-environment-setup
+# chien-dev (dev-environment-setup)
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Backend-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/Backend-Multipass-0052CC?style=for-the-badge&logo=ubuntu&logoColor=white" alt="Multipass">
+  <img src="https://img.shields.io/badge/Language-Bash-4EAA25?style=for-the-badge&logo=gnu-bash&logoColor=white" alt="Bash">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License">
+</p>
 
 [English](./README.md) | [繁體中文](./README.zh-TW.md)
 
-標準化開發環境腳本。支援 **容器 (DevContainer)** 與 **虛擬機 (Virtual Machine)** 雙後端，用於快速建立與管理隔離的開發環境。
+**chien-dev** 是一款標準化的開發環境腳手架。它支援 **容器 (DevContainer)** 與 **虛擬機 (Virtual Machine)** 雙後端，幫助你輕鬆配置與管理隔離的開發環境。
 
-## Before Start（先安裝與準備）
+---
 
-開始前，請先完成以下準備：
+## 核心功能
 
-1. 安裝 [Docker Desktop](https://www.docker.com/products/docker-desktop/)（需包含 Docker Compose v2）
-2. 啟動 Docker Desktop，確認 Docker daemon 已啟用
-3. **(選用)** 若計畫使用虛擬機環境，請安裝 [Multipass](https://multipass.run/)：
-4. 驗證必要指令可用
-   ```bash
-   docker --version
-   docker compose version
-   make --version
-   multipass version # 若計畫使用 VM
-   ```
+- **雙後端支援**：在 **Docker (DevContainer)** 與 **虛擬機 (Multipass VM)** 之間無縫切換。
+- **互動式建立**：透過友善的 CLI 自訂 OS 版本、開發語言與服務。
+- **智慧資源偵測**：自動偵測宿主機 CPU/RAM/磁碟，提供最合適的 VM 配置建議。
+- **SSH 安全自動化**：自動處理 VM 的 SSH 金鑰注入，實現免密登入。
+- **環境醫生 (Doctor Check)**：內建檢查連接埠衝突與工具依賴性。
 
-若你使用 Linux，請確保已安裝 `docker`、`docker compose`、`make`，並且目前使用者可直接執行 Docker 指令（不需 `sudo`）。
+---
 
-## 支援功能（MVP）
+## 操作演示 (Demo)
 
-- 互動式建立環境（選擇後端類型、Ubuntu 版本、語言組合、服務與環境名稱）
-- 支援雙後端：**DevContainer** (Docker) 與 **Virtual Machine** (Multipass)
-- 依環境名稱產生檔案到 `generated/envs/<name>/`
-- 啟動、停止、狀態檢查、環境檢測、清理
+![操作演示](./assets/dev_env_demo.gif)
+
+---
 
 ## 使用方式
 
-建議第一次先執行：
+### 啟動前準備
+
+- 安裝 [Docker Desktop](https://www.docker.com/products/docker-desktop/) (用於容器模式)
+- 安裝 [Multipass](https://multipass.run/) (選用，用於虛擬機模式)
+
+### 建議的第一次流程
 
 ```bash
 make chien-dev doctor
-make chien-dev create <NAME>
-make chien-dev start <NAME> PROJECT=/abs/path/to/repo
+make chien-dev create <名稱>
+make chien-dev start <名稱> PROJECT=/專案/絕對/路徑
 make chien-dev status
 ```
 
-### 虛擬機 (VM) 後端用法
+### 詳細指令行為
 
-若要建立虛擬機環境而非容器環境：
+- `make chien-dev help`：顯示指令用法與範例。
+- `make chien-dev create <name>`：建立命名環境（互動式或透過環境變數）。
+- `make chien-dev start <name> PROJECT=/path`：啟動環境並將專案掛載至 `/workspace`。
+- `make chien-dev status [name]`：顯示所有環境狀態或特定環境的詳細資訊。
+- `make chien-dev shell <name>`：進入容器 bash (容器模式) 或顯示 SSH 登入指令 (VM 模式)。
+- `make chien-dev stop <name>`：停止環境。
+- `make chien-dev clean <name>`：安全地移除環境及其產生的檔案。
+
+### 非互動模式 (適合 CI/CD)
+
+帶入以下變數即可跳過提示：
 
 ```bash
-ENV=vm make chien-dev create my-vm
+# 建立 VM 環境並指定資源
+ENV=vm VM_CPUS=4 VM_MEM=4G make chien-dev create my-node
+
+# 在容器中安裝特定語言與資料庫
+make chien-dev create my-dev LANGS=go,node DB=postgres
 ```
 
-建立完成後，可透過 `make chien-dev status` 查看 VM IP 以及 SSH 登入指令。
-
-### 非互動模式
-
-帶入任意以下變數即跳過對應提示：
-
-```bash
-# 建立 VM 環境
-ENV=vm make chien-dev create my-node
-
-# 在容器中只安裝 Go
-make chien-dev create my-dev LANGS=go
-
-# 指定語言與資料庫
-make chien-dev create my-dev LANGS=python,java DB=postgres
-```
-
-非互動模式支援的 KEY 一覽：
-
-| Key | 可選值 | 未指定時 |
-|-----|--------|----------|
+| Key | 可選值 | 預設值 |
+|-----|--------|---------|
 | `ENV` | `devcontainer`, `vm` | `devcontainer` |
 | `OS` | `22.04`, `24.04` | `22.04` |
-| `LANGS` | `go`, `node`, `python`, `java`, `php`（逗號分隔） | 不安裝 |
-| `FRONTEND` | `none`, `react`, `vue` | `none` |
-| `DB` | `postgres`, `mysql`, `mongodb`（逗號分隔） | 不安裝 |
-| `BROKER` | `redis`, `rabbitmq`, `kafka`（逗號分隔） | 不安裝 |
-| `GO_VER`, `NODE_VER`, `PYTHON_VER`, `JAVA_VER`, `PHP_VER` | 版本字串 | LTS 預設值 |
-| `PG_VER`, `MYSQL_VER`, `MONGODB_VER`, `REDIS_VER`, `RABBITMQ_VER`, `KAFKA_VER` | 版本字串 | LTS 預設值 |
+| `LANGS` | `go`, `node`, `python`, `java`, `php` | 無 |
+| `FRONTEND` | `react`, `vue` | `none` |
+| `DB` | `postgres`, `mysql`, `mongodb` | 無 |
+| `BROKER` | `redis`, `rabbitmq`, `kafka` | 無 |
 
-> **注意**：請使用 `LANGS`（不是 `LANG`），以避免和系統的 `LANG` 環境變數衝突。
+---
+
+## 環境測試
+
+啟動環境後，你可以執行以下動作驗證：
+
+```bash
+# 容器模式：
+make chien-dev shell <名稱>
+go version     # (或 node --version 等)
+
+# 虛擬機模式：
+# 執行 'make chien-dev status' 中顯示的 SSH 指令
+ssh ubuntu@<VM_IP>
+```
+
+---
 
 ## 程式碼結構
 
-`scripts/` 現在依後端與職責拆分：
+- `scripts/commands/`：CLI 指令處理邏輯。
+- `scripts/generators/`：設定產生器 (`container_render.sh`, `vm_render.sh`)。
+- `scripts/modules/`：共用的 Docker、VM 與網路偵測模組。
 
-- `scripts/commands/`：各子命令處理（`create/start/stop/status/shell/doctor/clean`）
-- `scripts/generators/`：各後端檔案產生器
-  - `container_render.sh`：處理 DevContainer 與 Docker Compose
-  - `vm_render.sh`：處理 Multipass 的 Cloud-init
-- `scripts/modules/`：共用執行模組
-  - `docker.sh`：Docker/Compose 輔助函式
-  - `vm.sh`：Multipass 輔助函式
-  - `network.sh`：連接埠掃描與偵測
-- `scripts/core/`：共用路徑與參數驗證
+---
 
-## TODO
+## 授權條款
 
-- [x] 建立專案命名約定（repo/CLI/config）
-- [x] 完成 MVP 指令骨架（`start/create/stop/status/doctor/clean`）
-- [x] 完成互動式選單並可產生 `chien-dev.yaml`
-- [x] 生成 `.devcontainer` 與 `docker-compose.yml`
-- [x] 補齊 README 基本用法與啟動前準備
-- [x] 擴充非互動模式（`LANGS=go,node DB=postgres make chien-dev create <name>`）
-- [x] 新增可自訂環境名稱（啟動時用於 dev container / 服務命名）
-- [x] 增強 `doctor`（port 衝突、daemon 狀態、權限檢查）
-- [ ] 建立測試與 CI（shellcheck + smoke tests）
-- [x] Phase 2：加入 VM backend (Multipass)
+採用 MIT 授權條款。
