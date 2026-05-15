@@ -8,7 +8,7 @@ do_start() {
   env_name="${env_name_arg}"
   
   if [[ -z "${env_name}" ]]; then
-    log_error "Usage: make chien-dev start <name> [PROJECT=/abs/path/to/repo]"
+    log_error "Usage: chien-dev start <name> [PROJECT=/abs/path/to/repo]"
     exit 1
   fi
 

@@ -5,7 +5,7 @@ do_help() {
 chien-dev | Dev Environment Setup
 
 Usage:
-  make chien-dev <command> [name] [KEY=value ...]
+  chien-dev <command> [name] [KEY=value ...]
 
 Commands:
   doctor
@@ -15,7 +15,7 @@ Commands:
     Interactive create a named environment and generate files under:
       generated/envs/<name>/
     Or non-interactive (pass any variable below to skip prompts):
-      LANGS=go,node DB=postgres BROKER=redis make chien-dev create <name>
+      LANGS=go,node DB=postgres BROKER=redis chien-dev create <name>
 
     Supported keys:
       OS=22.04|24.04        Ubuntu version (default: 22.04)
@@ -43,14 +43,14 @@ Commands:
     Safety: environment must be stopped first.
 
 Examples:
-  make chien-dev doctor
-  make chien-dev create go-dev
-  make chien-dev create go-dev LANGS=go DB=postgres
-  make chien-dev create ci-env LANGS=go,node FRONTEND=react DB=postgres BROKER=redis GO_VER=1.22.0
-  make chien-dev start go-dev PROJECT=/abs/path/to/repo
-  make chien-dev status
-  make chien-dev shell go-dev
-  make chien-dev stop go-dev
-  make chien-dev clean go-dev
+  chien-dev doctor
+  chien-dev create go-dev
+  chien-dev create go-dev LANGS=go DB=postgres
+  chien-dev create ci-env LANGS=go,node FRONTEND=react DB=postgres BROKER=redis GO_VER=1.22.0
+  chien-dev start go-dev PROJECT=/abs/path/to/repo
+  chien-dev status
+  chien-dev shell go-dev
+  chien-dev stop go-dev
+  chien-dev clean go-dev
 EOF
 }

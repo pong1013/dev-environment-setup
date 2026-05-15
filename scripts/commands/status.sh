@@ -14,13 +14,13 @@ do_status() {
     if [[ -f "${config_file}" ]]; then
       _print_single_status "${env_name}" "${config_file}"
     else
-      log_warn "Environment '${env_name}' not found. Run: make chien-dev create ${env_name}"
+      log_warn "Environment '${env_name}' not found. Run: chien-dev create ${env_name}"
     fi
     return
   fi
 
   if [[ ! -d "${ENVS_DIR}" ]]; then
-    log_info "No environments found. Run: make chien-dev create <name>"
+    log_info "No environments found. Run: chien-dev create <name>"
     return
   fi
 
@@ -37,7 +37,7 @@ do_status() {
   done
 
   if [[ "${found_any}" == "false" ]]; then
-    log_info "No environments found. Run: make chien-dev create <name>"
+    log_info "No environments found. Run: chien-dev create <name>"
   fi
 }
 
