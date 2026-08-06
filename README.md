@@ -1,4 +1,4 @@
-# 🚀 chien-dev (dev-environment-setup)
+# chien-dev (dev-environment-setup)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Backend-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
@@ -13,7 +13,7 @@
 
 ---
 
-## ✨ Features
+## Features
 
 - **Dual Backend Support**: Seamlessly toggle between **Docker (DevContainer)** and **Virtual Machine (Multipass)**.
 - **Interactive Setup**: Customize OS, languages, and services through a friendly CLI.
@@ -23,13 +23,13 @@
 
 ---
 
-## 📸 Demo
+## Demo
 
 ![Demo Screen Recording](./assets/dev_env_demo.gif)
 
 ---
 
-## 🚀 Installation & Usage
+## Usage
 
 ### 1. Installation (Global)
 
@@ -88,7 +88,7 @@ chien-dev create my-dev LANGS=go,node DB=postgres
 
 ---
 
-## 🧪 Testing Your Environment
+## Testing Your Environment
 
 After `chien-dev start <NAME>`, you can verify the setup:
 
@@ -104,7 +104,7 @@ ssh ubuntu@<VM_IP>
 
 ---
 
-## 📂 Structure & Extension
+## Structure & Extension
 
 - `scripts/commands/`: CLI command handlers.
 - `scripts/generators/`: Configuration renderers (`container_render.sh`, `vm_render.sh`).
@@ -112,6 +112,6 @@ ssh ubuntu@<VM_IP>
 
 ---
 
-## 📜 License
+## License
 
 Distributed under the MIT License.

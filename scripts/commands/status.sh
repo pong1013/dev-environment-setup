@@ -6,7 +6,7 @@ do_status() {
   local config_file
   local found_any="false"
   
-  env_name="${env_name_arg}"
+  env_name="${1:-${env_name_arg:-}}"
 
   if [[ -n "${env_name}" ]]; then
     validate_env_name "${env_name}"
@@ -48,6 +48,13 @@ _print_single_status() {
   
   if [[ "${backend}" == "vm" ]]; then
     echo "=== ${env_name} (VM) ==="
+    if ! vm_exists "${env_name}"; then
+      echo "  State: Missing"
+      echo "  IP:    N/A"
+      echo "  Hint:  chien-dev clean ${env_name}"
+      echo ""
+      return
+    fi
     local state=$(vm_get_status "${env_name}")
     local ip=$(vm_get_ip "${env_name}")
     echo "  State: ${state:-Unknown}"

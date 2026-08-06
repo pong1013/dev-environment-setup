@@ -33,28 +33,28 @@ env_name_arg="${2:-}"
 
 case "${command}" in
   start)
-    do_start
+    do_start "${@:2}"
     ;;
   create)
-    do_create
+    do_create "${@:2}"
     ;;
   stop)
-    do_stop
+    do_stop "${@:2}"
     ;;
   status)
-    do_status
+    do_status "${@:2}"
     ;;
   doctor)
-    do_doctor
+    do_doctor "${@:2}"
     ;;
   shell)
-    do_shell
+    do_shell "${@:2}"
     ;;
   help|-h|--help)
-    do_help
+    do_help "${@:2}"
     ;;
   clean)
-    do_clean
+    do_clean "${@:2}"
     ;;
   *)
     log_error "Unknown command: ${command}"

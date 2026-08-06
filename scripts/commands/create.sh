@@ -82,29 +82,105 @@ do_create() {
   local devcontainer_dir
   local compose_file
   local cloud_init_file
-  local env_type="${ENV:-}"
+  local env_type=""
   
   # VM specific defaults
   local vm_cpus="${VM_CPUS:-2}"
   local vm_mem="${VM_MEM:-2G}"
   local vm_disk="${VM_DISK:-10G}"
 
-  env_name="$(resolve_env_name "${env_name_arg}")"
+  # Parse arguments
+  local has_flags="false"
+  local env_name_input=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --backend=*)
+        env_type="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      --os=*)
+        os_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      --langs=*)
+        local langs_val="${1#*=}"
+        _parse_lang "${langs_val}"
+        has_flags="true"
+        shift
+        ;;
+      --frontend=*)
+        frontend_framework="$(echo "${1#*=}" | tr '[:upper:]' '[:lower:]')"
+        if [[ "${frontend_framework}" != "none" ]]; then
+          include_node="true"
+        fi
+        has_flags="true"
+        shift
+        ;;
+      --db=*)
+        local db_val="${1#*=}"
+        _parse_db "${db_val}"
+        has_flags="true"
+        shift
+        ;;
+      --broker=*)
+        local broker_val="${1#*=}"
+        _parse_broker "${broker_val}"
+        has_flags="true"
+        shift
+        ;;
+      --cpus=*)
+        vm_cpus="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      --memory=*)
+        vm_mem="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      --disk=*)
+        vm_disk="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      -*)
+        log_error "Unknown flag: $1"
+        exit 1
+        ;;
+      *)
+        if [[ -z "${env_name_input}" ]]; then
+          env_name_input="$1"
+        else
+          log_error "Multiple environment names provided: ${env_name_input} and $1"
+          exit 1
+        fi
+        shift
+        ;;
+    esac
+  done
+
+  # Fallback to env_name_arg if not captured by positional parsing
+  if [[ -z "${env_name_input}" ]]; then
+    env_name_input="${env_name_arg:-}"
+  fi
+
+  env_name="$(resolve_env_name "${env_name_input}")"
   validate_env_name "${env_name}"
 
   # ── Non-interactive mode ──────────────────────────────────────────────────
-  if [[ -n "${LANGS:-}${FRONTEND:-}${DB:-}${BROKER:-}${OS:-}${ENV:-}" ]]; then
-    log_info "Non-interactive mode: reading from environment variables."
-    env_type="${ENV:-devcontainer}"
-    os_version="${OS:-22.04}"
+  if [[ "${has_flags}" == "true" ]] || [[ -n "${LANGS:-}${FRONTEND:-}${DB:-}${BROKER:-}${OS:-}${ENV:-}" ]]; then
+    log_info "Non-interactive mode: using provided flags or environment variables."
+    env_type="${env_type:-${ENV:-devcontainer}}"
+    os_version="${os_version:-${OS:-22.04}}"
+    
+    # Environment variables fallback
     [[ -n "${LANGS:-}" ]]     && _parse_lang    "${LANGS}"
-    [[ -n "${FRONTEND:-}" ]] && frontend_framework="$(echo "${FRONTEND}" | tr '[:upper:]' '[:lower:]')"
+    [[ -n "${FRONTEND:-}" ]] && { frontend_framework="$(echo "${FRONTEND}" | tr '[:upper:]' '[:lower:]')"; if [[ "${frontend_framework}" != "none" ]]; then include_node="true"; fi; }
     [[ -n "${DB:-}" ]]       && _parse_db      "${DB}"
     [[ -n "${BROKER:-}" ]]   && _parse_broker  "${BROKER}"
 
-    if [[ "${frontend_framework}" != "none" ]]; then
-      include_node="true"
-    fi
     go_version="${GO_VER:-${go_version}}"
     node_version="${NODE_VER:-${node_version}}"
     python_version="${PYTHON_VER:-${python_version}}"

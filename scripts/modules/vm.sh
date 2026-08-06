@@ -7,6 +7,11 @@ ensure_multipass() {
   fi
 }
 
+vm_exists() {
+  local name="$1"
+  multipass info "${name}" >/dev/null 2>&1
+}
+
 vm_launch() {
   local name="$1"
   local cloud_init_file="$2"
@@ -44,12 +49,12 @@ get_host_resources() {
 
 vm_get_ip() {
   local name="$1"
-  multipass info "${name}" --format json | jq -r ".info.\"${name}\".ipv4[0]"
+  multipass info "${name}" --format json 2>/dev/null | jq -r ".info.\"${name}\".ipv4[0]"
 }
 
 vm_get_status() {
   local name="$1"
-  multipass info "${name}" --format json | jq -r ".info.\"${name}\".state"
+  multipass info "${name}" --format json 2>/dev/null | jq -r ".info.\"${name}\".state"
 }
 
 vm_stop() {
