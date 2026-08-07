@@ -260,7 +260,7 @@ services:
       context: ./.devcontainer
       dockerfile: Dockerfile
     volumes:
-      - \${PROJECT_PATH:-${default_project_path}}:/workspace
+      - "\${PROJECT_PATH:-${default_project_path}}:/workspace"
     command: sleep infinity
 EOF
 

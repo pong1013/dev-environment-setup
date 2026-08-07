@@ -22,7 +22,10 @@ do_shell() {
       log_error "VM '${env_name}' does not exist in Multipass. Run: chien-dev clean ${env_name}"
       exit 1
     fi
-    ssh "ubuntu@$(vm_get_ip "${env_name}")"
+    local vm_ip
+    vm_ip="$(vm_get_ip "${env_name}")"
+    log_info "VM environments are accessed over SSH:"
+    echo "  ssh ubuntu@${vm_ip}"
   else
     ensure_dependencies
     compose_file="$(compose_file_for "${env_name}")"

@@ -94,8 +94,35 @@ do_create() {
   local env_name_input=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --backend|--env|-e|-env)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a value: devcontainer or vm"
+          exit 1
+        fi
+        env_type="$1"
+        has_flags="true"
+        shift
+        ;;
       --backend=*)
         env_type="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      --env=*|-e=*|-env=*|ENV=*)
+        env_type="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      --os|-o|-os)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a value: 22.04 or 24.04"
+          exit 1
+        fi
+        os_version="$1"
         has_flags="true"
         shift
         ;;
@@ -104,9 +131,46 @@ do_create() {
         has_flags="true"
         shift
         ;;
+      -o=*|-os=*|OS=*)
+        os_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      --langs|-l|-langs)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a comma-separated language list."
+          exit 1
+        fi
+        local langs_val="$1"
+        _parse_lang "${langs_val}"
+        has_flags="true"
+        shift
+        ;;
       --langs=*)
         local langs_val="${1#*=}"
         _parse_lang "${langs_val}"
+        has_flags="true"
+        shift
+        ;;
+      -l=*|-langs=*|LANGS=*)
+        local langs_val="${1#*=}"
+        _parse_lang "${langs_val}"
+        has_flags="true"
+        shift
+        ;;
+      --frontend|-f)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a value: none, react, or vue"
+          exit 1
+        fi
+        frontend_framework="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+        if [[ "${frontend_framework}" != "none" ]]; then
+          include_node="true"
+        fi
         has_flags="true"
         shift
         ;;
@@ -118,9 +182,47 @@ do_create() {
         has_flags="true"
         shift
         ;;
+      -f=*|FRONTEND=*)
+        frontend_framework="$(echo "${1#*=}" | tr '[:upper:]' '[:lower:]')"
+        if [[ "${frontend_framework}" != "none" ]]; then
+          include_node="true"
+        fi
+        has_flags="true"
+        shift
+        ;;
+      --db|-d|-db)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a comma-separated database list."
+          exit 1
+        fi
+        local db_val="$1"
+        _parse_db "${db_val}"
+        has_flags="true"
+        shift
+        ;;
       --db=*)
         local db_val="${1#*=}"
         _parse_db "${db_val}"
+        has_flags="true"
+        shift
+        ;;
+      -d=*|-db=*|DB=*)
+        local db_val="${1#*=}"
+        _parse_db "${db_val}"
+        has_flags="true"
+        shift
+        ;;
+      --broker|-b)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a comma-separated broker list."
+          exit 1
+        fi
+        local broker_val="$1"
+        _parse_broker "${broker_val}"
         has_flags="true"
         shift
         ;;
@@ -130,17 +232,111 @@ do_create() {
         has_flags="true"
         shift
         ;;
-      --cpus=*)
+      -b=*|BROKER=*)
+        local broker_val="${1#*=}"
+        _parse_broker "${broker_val}"
+        has_flags="true"
+        shift
+        ;;
+      GO_VER=*)
+        go_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      NODE_VER=*)
+        node_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      PYTHON_VER=*)
+        python_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      JAVA_VER=*)
+        java_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      PHP_VER=*)
+        php_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      PG_VER=*)
+        pg_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      MYSQL_VER=*)
+        mysql_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      MONGODB_VER=*)
+        mongodb_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      REDIS_VER=*)
+        redis_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      RABBITMQ_VER=*)
+        rabbitmq_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      KAFKA_VER=*)
+        kafka_version="${1#*=}"
+        has_flags="true"
+        shift
+        ;;
+      --cpus|-c)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a CPU count."
+          exit 1
+        fi
+        vm_cpus="$1"
+        has_flags="true"
+        shift
+        ;;
+      --cpus=*|-c=*)
         vm_cpus="${1#*=}"
         has_flags="true"
         shift
         ;;
-      --memory=*)
+      --memory|-m)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a memory size, such as 4G."
+          exit 1
+        fi
+        vm_mem="$1"
+        has_flags="true"
+        shift
+        ;;
+      --memory=*|-m=*)
         vm_mem="${1#*=}"
         has_flags="true"
         shift
         ;;
-      --disk=*)
+      --disk|-s)
+        local flag_name="$1"
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "${flag_name} requires a disk size, such as 20G."
+          exit 1
+        fi
+        vm_disk="$1"
+        has_flags="true"
+        shift
+        ;;
+      --disk=*|-s=*)
         vm_disk="${1#*=}"
         has_flags="true"
         shift

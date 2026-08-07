@@ -51,7 +51,7 @@ curl -fsSL https://raw.githubusercontent.com/pong1013/dev-environment-setup/main
 ```bash
 chien-dev doctor
 chien-dev create <名稱>
-chien-dev start <名稱> PROJECT=/專案/絕對/路徑
+chien-dev start <名稱> --project /專案/絕對/路徑
 chien-dev status
 ```
 
@@ -59,7 +59,7 @@ chien-dev status
 
 - `chien-dev help`：顯示指令用法與範例。
 - `chien-dev create <name>`：建立命名環境（互動式或透過環境變數）。
-- `chien-dev start <name> PROJECT=/path`：啟動環境並將專案掛載至 `/workspace`。
+- `chien-dev start <name> --project /path`：啟動環境並將專案掛載至 `/workspace`（別名：`-p`；未提供時預設使用目前目錄）。
 - `chien-dev status [name]`：顯示所有環境狀態或特定環境的詳細資訊。
 - `chien-dev shell <name>`：進入容器 bash (容器模式) 或顯示 SSH 登入指令 (VM 模式)。
 - `chien-dev stop <name>`：停止環境。
@@ -67,24 +67,27 @@ chien-dev status
 
 ### 非互動模式 (適合 CI/CD)
 
-帶入以下變數即可跳過提示：
+帶入以下選項即可跳過提示：
 
 ```bash
 # 建立 VM 環境並指定資源
-ENV=vm VM_CPUS=4 VM_MEM=4G chien-dev create my-node
+chien-dev create my-node --env vm --cpus 4 --memory 4G --disk 20G
 
 # 在容器中安裝特定語言與資料庫
-chien-dev create my-dev LANGS=go,node DB=postgres
+chien-dev create my-dev --langs go,node --db postgres
 ```
 
-| Key | 可選值 | 預設值 |
+| Option | 可選值 | 預設值 |
 |-----|--------|---------|
-| `ENV` | `devcontainer`, `vm` | `devcontainer` |
-| `OS` | `22.04`, `24.04` | `22.04` |
-| `LANGS` | `go`, `node`, `python`, `java`, `php` | 無 |
-| `FRONTEND` | `react`, `vue` | `none` |
-| `DB` | `postgres`, `mysql`, `mongodb` | 無 |
-| `BROKER` | `redis`, `rabbitmq`, `kafka` | 無 |
+| `--env`, `-e` | `devcontainer`, `vm` | `devcontainer` |
+| `--os`, `-o` | `22.04`, `24.04` | `22.04` |
+| `--langs`, `-l` | `go`, `node`, `python`, `java`, `php` | 無 |
+| `--frontend`, `-f` | `react`, `vue`, `none` | `none` |
+| `--db`, `-d` | `postgres`, `mysql`, `mongodb` | 無 |
+| `--broker`, `-b` | `redis`, `rabbitmq`, `kafka` | 無 |
+| `--cpus`, `-c` | VM 模式 CPU 數量 | `2` |
+| `--memory`, `-m` | VM 模式記憶體大小 | `2G` |
+| `--disk`, `-s` | VM 模式磁碟大小 | `10G` |
 
 ---
 

@@ -51,7 +51,7 @@ If you skipped the automatic dependency installation, please manually install:
 ```bash
 chien-dev doctor
 chien-dev create <NAME>
-chien-dev start <NAME> PROJECT=/abs/path/to/repo
+chien-dev start <NAME> --project /abs/path/to/repo
 chien-dev status
 ```
 
@@ -59,7 +59,7 @@ chien-dev status
 
 - `chien-dev help`: Show command usage and examples.
 - `chien-dev create <name>`: Create a named environment (interactive or via env vars).
-- `chien-dev start <name> PROJECT=/path`: Start environment and mount project to `/workspace`.
+- `chien-dev start <name> --project /path`: Start environment and mount project to `/workspace` (alias: `-p`; defaults to the current directory when omitted).
 - `chien-dev status [name]`: Show all statuses or a specific environment's info.
 - `chien-dev shell <name>`: Enter workspace container bash (Container mode) or show SSH instructions (VM mode).
 - `chien-dev stop <name>`: Stop the environment.
@@ -67,24 +67,27 @@ chien-dev status
 
 ### Non-interactive Mode (CI/CD Ready)
 
-Pass any variable below to skip prompts:
+Pass any option below to skip prompts:
 
 ```bash
 # Create a VM environment
-ENV=vm VM_CPUS=4 VM_MEM=4G chien-dev create my-node
+chien-dev create my-node --env vm --cpus 4 --memory 4G --disk 20G
 
 # Create a Container with specific languages
-chien-dev create my-dev LANGS=go,node DB=postgres
+chien-dev create my-dev --langs go,node --db postgres
 ```
 
-| Key | Values | Default |
+| Option | Values | Default |
 |-----|--------|---------|
-| `ENV` | `devcontainer`, `vm` | `devcontainer` |
-| `OS` | `22.04`, `24.04` | `22.04` |
-| `LANGS` | `go`, `node`, `python`, `java`, `php` | none |
-| `FRONTEND` | `react`, `vue` | `none` |
-| `DB` | `postgres`, `mysql`, `mongodb` | none |
-| `BROKER` | `redis`, `rabbitmq`, `kafka` | none |
+| `--env`, `-e` | `devcontainer`, `vm` | `devcontainer` |
+| `--os`, `-o` | `22.04`, `24.04` | `22.04` |
+| `--langs`, `-l` | `go`, `node`, `python`, `java`, `php` | none |
+| `--frontend`, `-f` | `react`, `vue`, `none` | `none` |
+| `--db`, `-d` | `postgres`, `mysql`, `mongodb` | none |
+| `--broker`, `-b` | `redis`, `rabbitmq`, `kafka` | none |
+| `--cpus`, `-c` | CPU count for VM mode | `2` |
+| `--memory`, `-m` | Memory size for VM mode | `2G` |
+| `--disk`, `-s` | Disk size for VM mode | `10G` |
 
 ---
 
