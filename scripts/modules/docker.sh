@@ -17,3 +17,20 @@ compose_run() {
   shift 2
   docker compose -p "${env_name}" -f "${compose_file}" "$@"
 }
+
+# Returns:
+#   0 when the Compose project has one or more running containers
+#   1 when the Compose project has no running containers
+#   2 when Docker state cannot be inspected safely
+compose_project_is_running() {
+  local env_name="$1"
+  local container_ids
+
+  if ! container_ids="$(docker ps \
+    --filter "label=com.docker.compose.project=${env_name}" \
+    --quiet 2>/dev/null)"; then
+    return 2
+  fi
+
+  [[ -n "${container_ids}" ]]
+}

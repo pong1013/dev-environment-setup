@@ -63,7 +63,7 @@ chien-dev status
 - `chien-dev status [name]`：顯示所有環境狀態或特定環境的詳細資訊。
 - `chien-dev shell <name>`：進入容器 bash (容器模式) 或顯示 SSH 登入指令 (VM 模式)。
 - `chien-dev stop <name>`：停止環境。
-- `chien-dev clean <name>`：安全地移除環境及其產生的檔案。
+- `chien-dev clean <name>`：移除已停止的環境及其產生檔案；環境仍在執行時會拒絕清理。
 
 ### 非互動模式 (適合 CI/CD)
 

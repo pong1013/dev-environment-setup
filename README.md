@@ -63,7 +63,7 @@ chien-dev status
 - `chien-dev status [name]`: Show all statuses or a specific environment's info.
 - `chien-dev shell <name>`: Enter workspace container bash (Container mode) or show SSH instructions (VM mode).
 - `chien-dev stop <name>`: Stop the environment.
-- `chien-dev clean <name>`: Safely remove the environment and its generated files.
+- `chien-dev clean <name>`: Remove a stopped environment and its generated files. Cleanup is refused while the environment is running.
 
 ### Non-interactive Mode (CI/CD Ready)
 

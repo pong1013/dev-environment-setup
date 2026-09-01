@@ -44,7 +44,7 @@ Commands:
 
   clean <name>
     Remove the given environment (name required).
-    Safety: environment must be stopped first.
+    Safety: refuses cleanup while the environment is running; run stop first.
 
 Examples:
   chien-dev doctor
