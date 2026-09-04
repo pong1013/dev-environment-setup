@@ -31,19 +31,25 @@ generated/envs/<環境名稱>/（執行後產生，不納入 Git）
 
 ```text
 dev-environment-setup/
+├── .agents/skills/                 # Repository 專用的 AI 工作流程
+├── .github/workflows/              # Push 與 PR 的自動驗證
 ├── assets/                         # README 使用的展示素材
 ├── scripts/                        # CLI 主程式與所有執行邏輯
 │   ├── chien-dev                   # CLI 入口
+│   ├── harness-audit.sh            # 唯讀檢查可沉澱的 Harness 回饋
+│   ├── validate-skills.rb          # Canonical repository Skill YAML 驗證器
+│   ├── verify.sh                   # 統一的本機與 CI 驗證入口
 │   ├── commands/                   # 各子命令的流程控制
 │   ├── core/                       # 基礎路徑與驗證規則
 │   ├── generators/                 # 環境設定檔產生器
 │   └── modules/                    # Docker、VM、網路等共用功能
-├── tests/                          # 不接觸真實後端的 Bash 回歸測試
+├── tests/                          # Bash 測試入口與不接觸真實後端的回歸測試
 ├── templates/                      # 預留的靜態範本
 │   ├── compose/
 │   └── devcontainer/
 ├── generated/                      # 執行時產生的環境資料；預設不存在且被 Git 忽略
 ├── .gitignore
+├── AGENTS.md                       # 短小、常駐的 repository 工作規則
 ├── install.sh
 ├── LICENSE
 ├── Makefile
@@ -84,9 +90,11 @@ dev-environment-setup/
 make create my-env
 make start my-env
 make status
+make verify
+make harness-audit TRUSTED=1
 ```
 
-它會把目標名稱與額外參數轉交給 `./scripts/chien-dev`。萬用 `%` 規則用來吸收環境名稱等額外 Make target，避免 Make 將它們視為不存在的建置規則而失敗。
+操作型目標會把目標名稱與額外參數轉交給 `./scripts/chien-dev`。`verify` 統一執行 Bash 語法檢查、回歸測試與 repository Skill YAML／metadata 檢查；`harness-audit` 只接受明確標記為 trusted 的 checkout，並從隔離暫存目錄交付 allowlist 與遮蔽後的變更證據給唯讀 Codex。唯讀只限制修改，並不是機密資料隔離。萬用 `%` 規則用來吸收環境名稱等額外 Make target，避免 Make 將它們視為不存在的建置規則而失敗。
 
 ### `.gitignore`
 
@@ -104,6 +112,10 @@ make status
 即本文件，作為專案結構、檔案責任與執行流程的維護者導覽。
 
 ## `tests/`：回歸測試
+
+### `tests/run.sh`
+
+`make test` 與 `make verify` 共用的測試入口，會遞迴尋找、穩定排序並執行 `tests/` 下所有 `*_test.sh`，讓依功能分層的新增測試也會預設進入本機與 CI 驗證。
 
 ### `tests/clean_test.sh`
 

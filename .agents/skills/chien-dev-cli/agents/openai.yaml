@@ -1,0 +1,4 @@
+interface:
+  display_name: "Chien Dev CLI"
+  short_description: "Safely change and verify the chien-dev CLI"
+  default_prompt: "Use $chien-dev-cli to implement and verify this chien-dev CLI change."

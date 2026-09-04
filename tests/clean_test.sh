@@ -31,9 +31,15 @@ run_test() {
 }
 
 setup_mocks() {
-  test_tmp="$(mktemp -d "${TMPDIR:-/tmp}/chien-dev-clean-test.XXXXXX")"
-  mkdir -p "${test_tmp}/env"
-  trap 'rm -rf "${test_tmp}"' EXIT
+  test_tmp="$(mktemp -d "${TMPDIR:-/tmp}/chien-dev-clean-test.XXXXXX")" || {
+    fail "could not create the test temporary directory"
+    return 1
+  }
+  trap '[[ -n "${test_tmp:-}" && "${test_tmp}" == *"/chien-dev-clean-test."* ]] && rm -rf -- "${test_tmp}"' EXIT
+  mkdir -p "${test_tmp}/env" || {
+    fail "could not create the test environment directory"
+    return 1
+  }
 
   validate_env_name() { :; }
   env_dir_for() { echo "${test_tmp}/env"; }
@@ -59,7 +65,7 @@ setup_mocks() {
 }
 
 test_running_devcontainer_is_refused() {
-  setup_mocks
+  setup_mocks || return
   printf 'backend: devcontainer\n' > "${test_tmp}/env/chien-dev.yaml"
   touch "${test_tmp}/env/docker-compose.yml"
   compose_project_is_running() { return 0; }
@@ -75,7 +81,7 @@ test_running_devcontainer_is_refused() {
 }
 
 test_stopped_devcontainer_is_cleaned() {
-  setup_mocks
+  setup_mocks || return
   printf 'backend: devcontainer\n' > "${test_tmp}/env/chien-dev.yaml"
   touch "${test_tmp}/env/docker-compose.yml"
 
@@ -86,7 +92,7 @@ test_stopped_devcontainer_is_cleaned() {
 }
 
 test_unavailable_docker_status_is_refused() {
-  setup_mocks
+  setup_mocks || return
   printf 'backend: devcontainer\n' > "${test_tmp}/env/chien-dev.yaml"
   touch "${test_tmp}/env/docker-compose.yml"
   compose_project_is_running() { return 2; }
@@ -101,7 +107,7 @@ test_unavailable_docker_status_is_refused() {
 }
 
 test_devcontainer_started_during_prompt_is_refused() {
-  setup_mocks
+  setup_mocks || return
   printf 'backend: devcontainer\n' > "${test_tmp}/env/chien-dev.yaml"
   touch "${test_tmp}/env/docker-compose.yml"
   status_checks=0
@@ -121,7 +127,7 @@ test_devcontainer_started_during_prompt_is_refused() {
 }
 
 test_running_vm_is_refused() {
-  setup_mocks
+  setup_mocks || return
   printf 'backend: vm\n' > "${test_tmp}/env/chien-dev.yaml"
   vm_exists() { return 0; }
   vm_get_status() { echo "Running"; }
@@ -137,7 +143,7 @@ test_running_vm_is_refused() {
 }
 
 test_stopped_vm_is_cleaned() {
-  setup_mocks
+  setup_mocks || return
   printf 'backend: vm\n' > "${test_tmp}/env/chien-dev.yaml"
   vm_exists() { return 0; }
 

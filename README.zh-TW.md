@@ -113,6 +113,20 @@ ssh ubuntu@<VM_IP>
 - `scripts/generators/`：設定產生器 (`container_render.sh`, `vm_render.sh`)。
 - `scripts/modules/`：共用的 Docker、VM 與網路偵測模組。
 
+### 開發 Harness
+
+Repository 慣例記錄在 `AGENTS.md`，特定任務的 AI 工作流程則放在 `.agents/skills/`。
+完整開發驗證需要 Ruby 2.6 以上版本及其標準 YAML library。
+
+```bash
+make verify         # 檢查 Bash 語法、回歸測試與 Skill 結構
+make harness-audit TRUSTED=1  # 以清理過的輸入進行唯讀 Codex Harness review
+```
+
+每次 push 與 pull request 也會自動執行 `make verify`。
+
+只有在你已檢查並信任目前 checkout 時才能執行 `harness-audit`。它只會從隔離的暫存目錄，把 allowlist 內且經過遮蔽的快照交給 Codex；ignored files、疑似機密路徑、符號連結及 allowlist 外的路徑都不會納入。這個盡力而為的遮蔽器涵蓋常見機密指派、含有帳密的 URL（包括 database URL）及 `Authorization` header。Codex 的 read-only sandbox 只能防止修改 repository，並不是機密資料隔離邊界。
+
 ---
 
 ## 授權條款

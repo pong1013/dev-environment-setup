@@ -1,0 +1,4 @@
+interface:
+  display_name: "Harness Feedback"
+  short_description: "Turn repo lessons into durable Harness improvements"
+  default_prompt: "Use $harness-feedback to capture reusable lessons from this repository change."

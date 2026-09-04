@@ -113,6 +113,20 @@ ssh ubuntu@<VM_IP>
 - `scripts/generators/`: Configuration renderers (`container_render.sh`, `vm_render.sh`).
 - `scripts/modules/`: Shared logic for `docker.sh`, `vm.sh`, and `network.sh`.
 
+### Development Harness
+
+Repository conventions live in `AGENTS.md`, and task-specific AI workflows live under `.agents/skills/`.
+Running the full developer verification requires Ruby 2.6 or newer with its standard YAML library.
+
+```bash
+make verify         # Bash syntax, regression tests, and Skill structure
+make harness-audit TRUSTED=1  # Sanitized, read-only Codex Harness review
+```
+
+`make verify` is also run automatically for pushes and pull requests.
+
+Only run `harness-audit` after reviewing and trusting the checkout. It sends Codex an allowlisted, redacted snapshot from an isolated temporary directory; ignored files, secret-like paths, symlinks, and paths outside the allowlist are excluded. The best-effort redactor covers common secret assignments, credential-bearing URLs (including database URLs), and `Authorization` headers. The Codex read-only sandbox prevents repository writes, but it is not a confidentiality boundary.
+
 ---
 
 ## License
