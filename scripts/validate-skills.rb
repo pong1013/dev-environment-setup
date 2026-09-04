@@ -28,7 +28,10 @@ def reject_duplicate_keys!(node, source, path = "root")
 end
 
 def parse_yaml!(content, source)
-  syntax_tree = Psych.parse_stream(content, source)
+  # Keep this call compatible with the Psych version bundled with Ruby 2.6
+  # through current GitHub Actions Ruby.  Newer Psych releases accept the
+  # source filename as a keyword, while older releases accept only the YAML.
+  syntax_tree = Psych.parse_stream(content)
   reject_duplicate_keys!(syntax_tree, source)
   YAML.safe_load(content, permitted_classes: [], permitted_symbols: [], aliases: false)
 rescue Psych::SyntaxError, Psych::DisallowedClass, Psych::BadAlias => e
@@ -175,4 +178,3 @@ unless errors.empty?
 end
 
 puts "Validated #{skill_dirs.length} repository skills."
-
