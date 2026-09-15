@@ -118,6 +118,10 @@ ssh ubuntu@<VM_IP>
 Repository conventions live in `AGENTS.md`, and task-specific AI workflows live under `.agents/skills/`.
 Running the full developer verification requires Ruby 2.6 or newer with its standard YAML library.
 
+![Development harness architecture](./assets/harness.png)
+
+This diagram shows the repository's development harness architecture. The gated AI feature workflow follows the process maintained in [`pong1013/ai-workflow`](https://github.com/pong1013/ai-workflow); refer to that repository for the workflow itself.
+
 ```bash
 make verify         # Bash syntax, regression tests, and Skill structure
 make harness-audit TRUSTED=1  # Sanitized, read-only Codex Harness review
