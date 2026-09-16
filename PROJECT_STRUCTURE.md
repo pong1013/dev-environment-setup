@@ -31,9 +31,17 @@ generated/envs/<環境名稱>/（執行後產生，不納入 Git）
 
 ```text
 dev-environment-setup/
-├── .agents/skills/                 # Repository 專用的 AI 工作流程
+├── .agents/
+│   ├── project-contract.md         # AI workflow 的 repository 驗證與交付契約
+│   ├── runs/                       # 本機暫存 checkpoint；被 Git 忽略且不具權威性
+│   └── skills/                     # Repository 專用的 AI 工作流程
 ├── .github/workflows/              # Push 與 PR 的自動驗證
-├── assets/                         # README 使用的展示素材
+├── assets/
+│   ├── dev_env_demo.gif            # CLI 操作示範動畫
+│   └── harness.png                 # 開發 Harness 架構圖
+├── docs/agents/
+│   ├── domain.md                   # Lazy domain 文件探索規則
+│   └── issue-tracker.md            # GitHub Issues tracker routing 與操作規則
 ├── scripts/                        # CLI 主程式與所有執行邏輯
 │   ├── chien-dev                   # CLI 入口
 │   ├── harness-audit.sh            # 唯讀檢查可沉澱的 Harness 回饋
@@ -58,7 +66,7 @@ dev-environment-setup/
 └── README.zh-TW.md
 ```
 
-> `generated/` 不在版本庫中；它會在第一次執行 `chien-dev create` 時建立。
+> `generated/` 不在版本庫中；它會在第一次執行 `chien-dev create` 時建立。`.agents/runs/` 同樣預設不存在且不納入 Git，只保存可丟棄的本機 workflow checkpoint；其內容不能作為核准或其他權威證據。
 
 ## 根目錄檔案
 
@@ -102,6 +110,7 @@ make harness-audit TRUSTED=1
 
 - macOS 產生的 `.DS_Store`。
 - CLI 建立的整個 `generated/` 執行時目錄。
+- AI workflow 建立的 `.agents/runs/` 本機 checkpoint；這些資料可丟棄且不具權威性。
 
 ### `LICENSE`
 
@@ -126,6 +135,34 @@ make harness-audit TRUSTED=1
 ### `assets/dev_env_demo.gif`
 
 CLI 操作示範動畫，由英文與繁體中文 README 引用；不參與程式執行。
+
+### `assets/harness.png`
+
+既有開發 Harness 的架構圖，由英文與繁體中文 README 引用；它不是完整的 `ai-workflow` state machine，也不參與程式執行。
+
+## `.agents/`：AI workflow 控制與能力
+
+### `.agents/project-contract.md`
+
+定義 repository 的完整驗證 seam、知識來源、GitHub work artifacts、workspace 規則與 pull-request delivery policy，供 AI workflow 各階段共用。
+
+### `.agents/runs/`
+
+AI workflow 可在此暫存本機 checkpoint。此目錄被 Git 忽略，內容可隨時丟棄且不具權威性，不能取代當前 task 中的核准紀錄。
+
+### `.agents/skills/`
+
+存放 repository 專用的 AI 工作流程，讓 agent 在實作、診斷或回顧 Harness 時遵循一致的領域規則。
+
+## `docs/agents/`：Agent routing 文件
+
+### `docs/agents/issue-tracker.md`
+
+將規格與 tickets 導向 `pong1013/dev-environment-setup` 的 GitHub Issues，並定義 gated issue 操作、repository identity、sub-issue 與 dependency 規則。
+
+### `docs/agents/domain.md`
+
+定義 lazy domain 文件探索：只有相關檔案存在時才讀取 root `CONTEXT.md`、`CONTEXT-MAP.md` 與適用的 `docs/adr/`，不為尚未形成的領域決策預先建立文件。
 
 ## `scripts/`：CLI 實作
 

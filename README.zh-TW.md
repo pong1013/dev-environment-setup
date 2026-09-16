@@ -118,6 +118,10 @@ ssh ubuntu@<VM_IP>
 Repository 慣例記錄在 `AGENTS.md`，特定任務的 AI 工作流程則放在 `.agents/skills/`。
 完整開發驗證需要 Ruby 2.6 以上版本及其標準 YAML library。
 
+![開發 Harness 架構](./assets/harness.png)
+
+此圖呈現本 repository 的開發 Harness 架構。受 gate 控制的 AI feature workflow 採用 [`pong1013/ai-workflow`](https://github.com/pong1013/ai-workflow) 維護的流程；流程本身請參考該 repository。
+
 ```bash
 make verify         # 檢查 Bash 語法、回歸測試與 Skill 結構
 make harness-audit TRUSTED=1  # 以清理過的輸入進行唯讀 Codex Harness review

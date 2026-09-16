@@ -31,4 +31,8 @@ if ! command -v ruby >/dev/null 2>&1; then
 fi
 ruby "${ROOT_DIR}/scripts/validate-skills.rb"
 
+echo "Validating AI workflow integration..."
+bash "${ROOT_DIR}/scripts/validate-ai-workflow.sh" "${ROOT_DIR}"
+
 echo "Verification passed."
+echo "HARNESS_VERIFICATION_STATUS=complete"
