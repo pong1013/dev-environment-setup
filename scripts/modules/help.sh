@@ -46,6 +46,11 @@ Commands:
     Remove the given environment (name required).
     Safety: refuses cleanup while the environment is running; run stop first.
 
+  update
+    Compare this Git installation with GitHub main. If behind, ask before a
+    safe fast-forward update. Requires a clean local main checkout and a terminal.
+    No options or non-interactive update are supported.
+
 Examples:
   chien-dev doctor
   chien-dev create go-dev
@@ -56,5 +61,6 @@ Examples:
   chien-dev shell go-dev
   chien-dev stop go-dev
   chien-dev clean go-dev
+  chien-dev update
 EOF
 }
