@@ -64,6 +64,7 @@ chien-dev status
 - `chien-dev shell <name>`: Enter workspace container bash (Container mode) or show SSH instructions (VM mode).
 - `chien-dev stop <name>`: Stop the environment.
 - `chien-dev clean <name>`: Remove a stopped environment and its generated files. Cleanup is refused while the environment is running.
+- `chien-dev update`: Compare the running Git installation's commit with the canonical GitHub `main` commit. If behind, ask before a fast-forward update. Updating requires an interactive terminal and a clean installation checkout on local `main`; unsafe or unavailable checks fail without updating. There is no non-interactive update or `--yes` option.
 
 ### Non-interactive Mode (CI/CD Ready)
 

@@ -176,7 +176,7 @@ CLI 主入口，負責：
 - 解析符號連結，找出實際安裝目錄，確保從 `~/.local/bin/chien-dev` 執行時仍能正確載入其他腳本。
 - 依序載入 `core/`、`modules/`、`generators/` 與 `commands/`。
 - 讀取第一個參數作為命令；沒有命令時預設執行 `start`。
-- 將 `start`、`create`、`stop`、`status`、`doctor`、`shell`、`clean`、`help` 分派到對應的 `do_*` 函式。
+- 將 `start`、`create`、`stop`、`status`、`doctor`、`shell`、`clean`、`update`、`help` 分派到對應的 `do_*` 函式。
 - 遇到未知命令時顯示錯誤與可用命令清單。
 
 ## `scripts/core/`：基礎規則
@@ -284,6 +284,10 @@ CLI 主入口，負責：
 - 最後刪除 `generated/envs/<name>/`。
 
 此命令會刪除容器資料 volume 或 VM，屬不可逆的資料清理操作。
+
+### `scripts/commands/update.sh`
+
+實作 `chien-dev update`，比較目前執行的 Git checkout commit 與官方 GitHub `main` commit。只有安裝目錄位於乾淨的本機 `main` 分支、`origin` 指向官方 repository，且可 fast-forward 時，才會詢問使用者是否更新；確認後再次檢查狀態與遠端目標，僅執行 fast-forward。無法確認版本、非互動執行、使用者拒絕或狀態不安全時，不會改動工作目錄；拒絕更新但版本仍落後時以成功狀態結束，其他拒絕則為非零狀態。此命令不會重跑 `install.sh` 或覆蓋本機修改。
 
 ## `scripts/modules/`：共用能力
 
@@ -414,6 +418,7 @@ VM 本體由 Multipass 管理，不存放在此專案目錄；刪除這個資料
 | `doctor` | `commands/doctor.sh` | network、log | 檢查工具、Docker daemon 與 port 衝突 |
 | `shell` | `commands/shell.sh` | docker、vm | 進入工作容器或顯示 VM SSH 指令 |
 | `clean` | `commands/clean.sh` | prompt、docker、vm | 刪除容器 volume／VM 與生成檔 |
+| `update` | `commands/update.sh` | Git、命令內確認提示 | 比較官方 `main` 並在確認與安全檢查後 fast-forward 更新安裝目錄 |
 | `help` | `modules/help.sh` | 無 | 顯示 CLI 使用說明 |
 
 ## 維護時的修改位置
