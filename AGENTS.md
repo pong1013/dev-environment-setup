@@ -18,3 +18,14 @@
 - Update tests for behavior changes. Keep CLI help plus `README.md` and `README.zh-TW.md` aligned when user-facing commands or options change.
 - Run `make verify` before handing off. State any Docker or Multipass behavior that could not be exercised locally.
 
+<!-- ai-workflow:agent-skills:start -->
+## Agent skills
+
+### Issue tracker
+
+Specifications and tickets are tracked in `pong1013/dev-environment-setup` GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This is a single-context repository with lazy root domain documentation. See `docs/agents/domain.md`.
+<!-- ai-workflow:agent-skills:end -->

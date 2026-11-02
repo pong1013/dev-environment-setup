@@ -32,3 +32,4 @@ fi
 ruby "${ROOT_DIR}/scripts/validate-skills.rb"
 
 echo "Verification passed."
+echo "HARNESS_VERIFICATION_STATUS=complete"
