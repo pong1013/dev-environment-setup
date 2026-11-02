@@ -24,6 +24,14 @@ Commands:
       --frontend, -f react|vue|none Frontend framework
       --db, -d postgres,...        Databases: postgres mysql mongodb
       --broker, -b redis,...       Brokers: redis rabbitmq kafka
+      --docker-socket             Mount host socket; install Docker CLI + Compose
+      --no-docker-socket          Disable socket access
+      --docker-socket-path /abs/path  Custom host socket; enables access
+                                  DevContainer only; conflicting flags rejected.
+                                  Interactive default: yes (controls host Docker).
+                                  Non-interactive default: no. Default source and
+                                  container target: /var/run/docker.sock.
+                                  Source must exist on daemon host at start time.
       --cpus, -c 4                 VM CPU count
       --memory, -m 4G              VM memory size
       --disk, -s 20G               VM disk size

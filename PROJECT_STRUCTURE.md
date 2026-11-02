@@ -178,6 +178,7 @@ CLI 主入口，負責：
 - 解析語言、前端框架、資料庫、訊息代理、Ubuntu 版本與 VM 資源選項。
 - 支援互動模式、CLI flags 與環境變數／`KEY=value` 非互動模式。
 - 前端選擇 React 或 Vue 時會自動啟用 Node.js。
+- DevContainer 互動模式詢問 Docker socket 掛載，預設啟用；非互動預設停用。在產生檔案前驗證 socket 旗標與路徑；VM 拒絕這些選項。
 - DevContainer 模式會檢查常用服務連接埠，若被占用便從預設埠開始尋找下一個可用埠。
 - DevContainer 模式呼叫產生器建立 `chien-dev.yaml`、Dockerfile、`devcontainer.json` 與 `docker-compose.yml`。
 - VM 模式確認 Multipass 存在、取得或建立 SSH 金鑰、產生 cloud-init，接著立即建立 VM。
@@ -308,9 +309,9 @@ CLI 主入口，負責：
 
 負責產生 DevContainer 相關檔案，包含三個主要函式：
 
-- `render_config`：建立環境的 `chien-dev.yaml`，記錄後端、OS、語言、版本、服務開關與 host port。
-- `render_devcontainer`：依選項動態建立 Dockerfile 與 VS Code `devcontainer.json`。Dockerfile 安裝共用工具及選定的 Go、Node.js、Python、Java、PHP；`devcontainer.json` 則加入相應的 VS Code extensions。
-- `render_compose`：建立工作容器與選配服務，設定 `/workspace` 掛載、服務帳密、連接埠及持久化 volume。
+- `render_config`：建立環境的 `chien-dev.yaml`，記錄後端、OS、語言、版本、服務開關、host port 與 DevContainer socket 啟用狀態及來源路徑。
+- `render_devcontainer`：依選項動態建立 Dockerfile 與 VS Code `devcontainer.json`。Dockerfile 安裝共用工具及選定的 Go、Node.js、Python、Java、PHP；`devcontainer.json` 則加入相應的 VS Code extensions。啟用 socket 時另安裝官方 Docker CLI 與 Compose plugin，不安裝 daemon。
+- `render_compose`：建立工作容器與選配服務，設定 `/workspace` 與選配 socket 掛載（不自動建立來源目錄）、服務帳密、連接埠及持久化 volume。
 
 選配服務的開發用預設帳密也直接寫在生成的 Compose 檔中，因此這些生成物適合本機開發，不應直接當成正式環境的安全設定。
 

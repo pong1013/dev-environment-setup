@@ -85,9 +85,16 @@ chien-dev create my-dev --langs go,node --db postgres
 | `--frontend`, `-f` | `react`, `vue`, `none` | `none` |
 | `--db`, `-d` | `postgres`, `mysql`, `mongodb` | none |
 | `--broker`, `-b` | `redis`, `rabbitmq`, `kafka` | none |
+| `--docker-socket` | Mount host socket; install Docker CLI + Compose (DevContainer only) | off in non-interactive mode |
+| `--no-docker-socket` | Disable socket access | - |
+| `--docker-socket-path` | Absolute host socket path; enables access | `/var/run/docker.sock` |
 | `--cpus`, `-c` | CPU count for VM mode | `2` |
 | `--memory`, `-m` | Memory size for VM mode | `2G` |
 | `--disk`, `-s` | Disk size for VM mode | `10G` |
+
+Interactive DevContainer creation asks whether to mount the Docker socket, default **yes**. This lets the container control the host Docker daemon. Enabling access installs Docker CLI and Compose from [Docker's official Ubuntu repository](https://docs.docker.com/engine/install/ubuntu/); it does not install or start a container-local daemon. Non-interactive creation defaults to no access. Use `--docker-socket` to opt in, `--no-docker-socket` to opt out, or `--docker-socket-path "/absolute/path/docker.sock"` for a custom source. Conflicting enable/disable flags and socket flags with VM mode are rejected.
+
+The container target is always `/var/run/docker.sock`. The source is resolved on the Docker daemon host, not necessarily the machine running this CLI; it need not exist when generating files, but must be an accessible socket when starting the container. No socket directory is created automatically. Rootless or remote Docker configurations may require a custom path and matching access permissions. Commands such as `docker run -v` resolve host paths on that daemon host. Existing generated environments are unchanged; VM Docker installation is tracked separately.
 
 ---
 
