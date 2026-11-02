@@ -64,6 +64,7 @@ chien-dev status
 - `chien-dev shell <name>`：進入容器 bash (容器模式) 或顯示 SSH 登入指令 (VM 模式)。
 - `chien-dev stop <name>`：停止環境。
 - `chien-dev clean <name>`：移除已停止的環境及其產生檔案；環境仍在執行時會拒絕清理。
+- `chien-dev update`：比較目前執行的 Git 安裝版本 commit 與官方 GitHub `main` commit；若有新版，確認後才以 fast-forward 更新。更新需有互動式終端機，且安裝目錄須在乾淨的本機 `main` 分支；無法確認版本或狀態不安全時會拒絕更新。不支援非互動更新或 `--yes` 選項。
 
 ### 非互動模式 (適合 CI/CD)
 
@@ -124,6 +125,10 @@ ssh ubuntu@<VM_IP>
 
 Repository 慣例記錄在 `AGENTS.md`，特定任務的 AI 工作流程則放在 `.agents/skills/`。
 完整開發驗證需要 Ruby 2.6 以上版本及其標準 YAML library。
+
+![開發 Harness 架構](./assets/harness.png)
+
+此圖呈現本 repository 的開發 Harness 架構。受 gate 控制的 AI feature workflow 採用 [`pong1013/ai-workflow`](https://github.com/pong1013/ai-workflow) 維護的流程；流程本身請參考該 repository。
 
 ```bash
 make verify         # 檢查 Bash 語法、回歸測試與 Skill 結構

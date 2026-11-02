@@ -41,7 +41,7 @@ is_allowed_audit_path() {
   [[ ! -L "${ROOT_DIR}/${path}" ]] || return 1
 
   case "${path}" in
-    AGENTS.md|Makefile|PROJECT_STRUCTURE.md|README.md|README.zh-TW.md|install.sh|scripts/chien-dev|scripts/*.sh|scripts/validate-skills.rb|tests/*.sh|templates/*.tmpl|.agents/skills/*/SKILL.md|.agents/skills/*/agents/openai.yaml|.github/workflows/*.yml|.github/workflows/*.yaml)
+    AGENTS.md|Makefile|PROJECT_STRUCTURE.md|README.md|README.zh-TW.md|install.sh|scripts/chien-dev|scripts/*.sh|scripts/validate-skills.rb|tests/*.sh|templates/*.tmpl|.agents/project-contract.md|.agents/skills/*/SKILL.md|.agents/skills/*/agents/openai.yaml|docs/agents/issue-tracker.md|docs/agents/domain.md|.github/workflows/*.yml|.github/workflows/*.yaml)
       return 0
       ;;
   esac

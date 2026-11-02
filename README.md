@@ -64,6 +64,7 @@ chien-dev status
 - `chien-dev shell <name>`: Enter workspace container bash (Container mode) or show SSH instructions (VM mode).
 - `chien-dev stop <name>`: Stop the environment.
 - `chien-dev clean <name>`: Remove a stopped environment and its generated files. Cleanup is refused while the environment is running.
+- `chien-dev update`: Compare the running Git installation's commit with the canonical GitHub `main` commit. If behind, ask before a fast-forward update. Updating requires an interactive terminal and a clean installation checkout on local `main`; unsafe or unavailable checks fail without updating. There is no non-interactive update or `--yes` option.
 
 ### Non-interactive Mode (CI/CD Ready)
 
@@ -124,6 +125,10 @@ ssh ubuntu@<VM_IP>
 
 Repository conventions live in `AGENTS.md`, and task-specific AI workflows live under `.agents/skills/`.
 Running the full developer verification requires Ruby 2.6 or newer with its standard YAML library.
+
+![Development harness architecture](./assets/harness.png)
+
+This diagram shows the repository's development harness architecture. The gated AI feature workflow follows the process maintained in [`pong1013/ai-workflow`](https://github.com/pong1013/ai-workflow); refer to that repository for the workflow itself.
 
 ```bash
 make verify         # Bash syntax, regression tests, and Skill structure

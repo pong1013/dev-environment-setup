@@ -31,9 +31,17 @@ generated/envs/<環境名稱>/（執行後產生，不納入 Git）
 
 ```text
 dev-environment-setup/
-├── .agents/skills/                 # Repository 專用的 AI 工作流程
+├── .agents/
+│   ├── project-contract.md         # AI workflow 的 repository 驗證與交付契約
+│   ├── runs/                       # 本機暫存 checkpoint；被 Git 忽略且不具權威性
+│   └── skills/                     # Repository 專用的 AI 工作流程
 ├── .github/workflows/              # Push 與 PR 的自動驗證
-├── assets/                         # README 使用的展示素材
+├── assets/
+│   ├── dev_env_demo.gif            # CLI 操作示範動畫
+│   └── harness.png                 # 開發 Harness 架構圖
+├── docs/agents/
+│   ├── domain.md                   # Lazy domain 文件探索規則
+│   └── issue-tracker.md            # GitHub Issues tracker routing 與操作規則
 ├── scripts/                        # CLI 主程式與所有執行邏輯
 │   ├── chien-dev                   # CLI 入口
 │   ├── harness-audit.sh            # 唯讀檢查可沉澱的 Harness 回饋
@@ -58,7 +66,7 @@ dev-environment-setup/
 └── README.zh-TW.md
 ```
 
-> `generated/` 不在版本庫中；它會在第一次執行 `chien-dev create` 時建立。
+> `generated/` 不在版本庫中；它會在第一次執行 `chien-dev create` 時建立。`.agents/runs/` 同樣預設不存在且不納入 Git，只保存可丟棄的本機 workflow checkpoint；其內容不能作為核准或其他權威證據。
 
 ## 根目錄檔案
 
@@ -102,6 +110,7 @@ make harness-audit TRUSTED=1
 
 - macOS 產生的 `.DS_Store`。
 - CLI 建立的整個 `generated/` 執行時目錄。
+- AI workflow 建立的 `.agents/runs/` 本機 checkpoint；這些資料可丟棄且不具權威性。
 
 ### `LICENSE`
 
@@ -127,6 +136,34 @@ make harness-audit TRUSTED=1
 
 CLI 操作示範動畫，由英文與繁體中文 README 引用；不參與程式執行。
 
+### `assets/harness.png`
+
+既有開發 Harness 的架構圖，由英文與繁體中文 README 引用；它不是完整的 `ai-workflow` state machine，也不參與程式執行。
+
+## `.agents/`：AI workflow 控制與能力
+
+### `.agents/project-contract.md`
+
+定義 repository 的完整驗證 seam、知識來源、GitHub work artifacts、workspace 規則與 pull-request delivery policy，供 AI workflow 各階段共用。
+
+### `.agents/runs/`
+
+AI workflow 可在此暫存本機 checkpoint。此目錄被 Git 忽略，內容可隨時丟棄且不具權威性，不能取代當前 task 中的核准紀錄。
+
+### `.agents/skills/`
+
+存放 repository 專用的 AI 工作流程，讓 agent 在實作、診斷或回顧 Harness 時遵循一致的領域規則。
+
+## `docs/agents/`：Agent routing 文件
+
+### `docs/agents/issue-tracker.md`
+
+將規格與 tickets 導向 `pong1013/dev-environment-setup` 的 GitHub Issues，並定義 gated issue 操作、repository identity、sub-issue 與 dependency 規則。
+
+### `docs/agents/domain.md`
+
+定義 lazy domain 文件探索：只有相關檔案存在時才讀取 root `CONTEXT.md`、`CONTEXT-MAP.md` 與適用的 `docs/adr/`，不為尚未形成的領域決策預先建立文件。
+
 ## `scripts/`：CLI 實作
 
 此目錄包含真正會執行的 CLI 程式碼。各 `.sh` 檔不是獨立執行，而是由 `scripts/chien-dev` 依固定順序 `source` 進同一個 Bash 程序，因此函式與全域變數可以互相使用。
@@ -139,7 +176,7 @@ CLI 主入口，負責：
 - 解析符號連結，找出實際安裝目錄，確保從 `~/.local/bin/chien-dev` 執行時仍能正確載入其他腳本。
 - 依序載入 `core/`、`modules/`、`generators/` 與 `commands/`。
 - 讀取第一個參數作為命令；沒有命令時預設執行 `start`。
-- 將 `start`、`create`、`stop`、`status`、`doctor`、`shell`、`clean`、`help` 分派到對應的 `do_*` 函式。
+- 將 `start`、`create`、`stop`、`status`、`doctor`、`shell`、`clean`、`update`、`help` 分派到對應的 `do_*` 函式。
 - 遇到未知命令時顯示錯誤與可用命令清單。
 
 ## `scripts/core/`：基礎規則
@@ -248,6 +285,10 @@ CLI 主入口，負責：
 - 最後刪除 `generated/envs/<name>/`。
 
 此命令會刪除容器資料 volume 或 VM，屬不可逆的資料清理操作。
+
+### `scripts/commands/update.sh`
+
+實作 `chien-dev update`，比較目前執行的 Git checkout commit 與官方 GitHub `main` commit。只有安裝目錄位於乾淨的本機 `main` 分支、`origin` 指向官方 repository，且可 fast-forward 時，才會詢問使用者是否更新；確認後再次檢查狀態與遠端目標，僅執行 fast-forward。無法確認版本、非互動執行、使用者拒絕或狀態不安全時，不會改動工作目錄；拒絕更新但版本仍落後時以成功狀態結束，其他拒絕則為非零狀態。此命令不會重跑 `install.sh` 或覆蓋本機修改。
 
 ## `scripts/modules/`：共用能力
 
@@ -378,6 +419,7 @@ VM 本體由 Multipass 管理，不存放在此專案目錄；刪除這個資料
 | `doctor` | `commands/doctor.sh` | network、log | 檢查工具、Docker daemon 與 port 衝突 |
 | `shell` | `commands/shell.sh` | docker、vm | 進入工作容器或顯示 VM SSH 指令 |
 | `clean` | `commands/clean.sh` | prompt、docker、vm | 刪除容器 volume／VM 與生成檔 |
+| `update` | `commands/update.sh` | Git、命令內確認提示 | 比較官方 `main` 並在確認與安全檢查後 fast-forward 更新安裝目錄 |
 | `help` | `modules/help.sh` | 無 | 顯示 CLI 使用說明 |
 
 ## 維護時的修改位置

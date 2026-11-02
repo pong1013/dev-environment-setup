@@ -26,16 +26,28 @@ fail() {
 }
 
 repo="${TEST_TMP}/repo"
-mkdir -p "${repo}/scripts" "${repo}/generated"
+mkdir -p \
+  "${repo}/.agents/runs" \
+  "${repo}/assets" \
+  "${repo}/docs/agents" \
+  "${repo}/generated" \
+  "${repo}/scripts"
 git -C "${repo}" init -q
-printf '.env\ngenerated/\n' > "${repo}/.gitignore"
+printf '.env\ngenerated/\n.agents/runs/\n' > "${repo}/.gitignore"
 printf '# baseline\n' > "${repo}/AGENTS.md"
 printf '#!/usr/bin/env bash\necho baseline\n' > "${repo}/scripts/example.sh"
 git -C "${repo}" add .gitignore AGENTS.md scripts/example.sh
 git -C "${repo}" -c user.name=test -c user.email=test@example.com commit -qm baseline
 
 printf '#!/usr/bin/env bash\nAPI_KEY=supersecret\nDATABASE_URL=postgres://audit_user:db-password@db.example.test:5432/app\ncurl -H "Authorization: Basic YXVkaXRfdXNlcjpiYXNpYy1wYXNzd29yZA=="\necho safe-change\necho ghp_12345678901234567890\n-----BEGIN PRIVATE KEY-----\n' > "${repo}/scripts/example.sh"
+printf '# Project Contract\n\ncontract-safe-change\n' > "${repo}/.agents/project-contract.md"
+printf '# Domain Docs\n\ndomain-safe-change\nAPI_TOKEN=domain-secret-value\n' > "${repo}/docs/agents/domain.md"
+printf '# Issue tracker\n\ntracker-safe-change\n' > "${repo}/docs/agents/issue-tracker.md"
+printf 'not-really-an-image\n' > "${repo}/assets/harness.png"
+printf '#!/usr/bin/env bash\necho should-remain-excluded\n' > "${repo}/scripts/access-token.sh"
+ln -s example.sh "${repo}/scripts/symlink.sh"
 printf 'TOP_SECRET=hidden\n' > "${repo}/.env"
+printf 'checkpoint-value\n' > "${repo}/.agents/runs/current.json"
 printf 'credential-value\n' > "${repo}/credentials.txt"
 printf 'ignored-value\n' > "${repo}/generated/runtime.txt"
 
@@ -55,22 +67,46 @@ else
   fail "allowlisted changed source is included"
 fi
 
-if [[ "${audit_output}" == *"[REDACTED SECRET-LIKE LINE]"* && "${audit_output}" != *"supersecret"* && "${audit_output}" != *"audit_user"* && "${audit_output}" != *"db-password"* && "${audit_output}" != *"YXVkaXRfdXNlcjpiYXNpYy1wYXNzd29yZA=="* && "${audit_output}" != *"ghp_12345678901234567890"* && "${audit_output}" != *"BEGIN PRIVATE KEY"* ]]; then
+if [[ "${audit_output}" == *"--- FILE: .agents/project-contract.md ---"* && "${audit_output}" == *"contract-safe-change"* ]]; then
+  pass "Project Contract changes are included"
+else
+  fail "Project Contract changes are included"
+fi
+
+if [[ "${audit_output}" == *"--- FILE: docs/agents/domain.md ---"* && "${audit_output}" == *"domain-safe-change"* && "${audit_output}" == *"--- FILE: docs/agents/issue-tracker.md ---"* && "${audit_output}" == *"tracker-safe-change"* ]]; then
+  pass "tracker and domain routing changes are included"
+else
+  fail "tracker and domain routing changes are included"
+fi
+
+if [[ "${audit_output}" == *"[REDACTED SECRET-LIKE LINE]"* && "${audit_output}" != *"supersecret"* && "${audit_output}" != *"audit_user"* && "${audit_output}" != *"db-password"* && "${audit_output}" != *"YXVkaXRfdXNlcjpiYXNpYy1wYXNzd29yZA=="* && "${audit_output}" != *"ghp_12345678901234567890"* && "${audit_output}" != *"BEGIN PRIVATE KEY"* && "${audit_output}" != *"domain-secret-value"* ]]; then
   pass "secret-like source lines, URLs, and Basic Auth are redacted"
 else
   fail "secret-like source lines, URLs, and Basic Auth are redacted"
 fi
 
-if [[ "${audit_output}" != *"TOP_SECRET"* && "${audit_output}" != *"hidden"* && "${audit_output}" != *"credential-value"* ]]; then
-  pass "secret-like and ignored untracked files are excluded"
+if [[ "${audit_output}" != *"TOP_SECRET"* && "${audit_output}" != *"hidden"* && "${audit_output}" != *"credential-value"* && "${audit_output}" != *"access-token.sh"* && "${audit_output}" != *"should-remain-excluded"* ]]; then
+  pass "secret-like paths and ignored untracked files are excluded"
 else
-  fail "secret-like and ignored untracked files are excluded"
+  fail "secret-like paths and ignored untracked files are excluded"
 fi
 
-if [[ "${audit_output}" != *"ignored-value"* && "${audit_output}" != *"runtime.txt"* ]]; then
-  pass "generated files are excluded"
+if [[ "${audit_output}" != *"ignored-value"* && "${audit_output}" != *"runtime.txt"* && "${audit_output}" != *"checkpoint-value"* && "${audit_output}" != *"current.json"* ]]; then
+  pass "generated files and workflow checkpoints are excluded"
 else
-  fail "generated files are excluded"
+  fail "generated files and workflow checkpoints are excluded"
+fi
+
+if [[ "${audit_output}" != *"harness.png"* && "${audit_output}" != *"not-really-an-image"* ]]; then
+  pass "harness image is excluded"
+else
+  fail "harness image is excluded"
+fi
+
+if [[ "${audit_output}" != *"symlink.sh"* ]]; then
+  pass "symlinks are excluded"
+else
+  fail "symlinks are excluded"
 fi
 
 echo "${TESTS_RUN} tests, ${TESTS_FAILED} failures"
