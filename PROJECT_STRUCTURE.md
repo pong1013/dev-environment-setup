@@ -130,6 +130,10 @@ make harness-audit TRUSTED=1
 
 使用 Bash mock 驗證 `clean` 的安全界線，不會操作真實 Docker 或 Multipass 資源。涵蓋 running DevContainer、stopped DevContainer、Docker 狀態查詢失敗、確認期間環境被啟動、running VM 與 stopped VM；可透過 `make test` 執行。
 
+### `tests/stale_vm_cleanup_test.sh`
+
+透過公開 CLI 與暫存生成目錄測試 VM 殘留紀錄，僅模擬外部 Multipass。涵蓋 Missing／Stopped／Deleted／Running、無法可靠查詢、無效清單、確認前後的競態與刪除失敗，並斷言未發生非預期刪除。
+
 ## `assets/`：文件素材
 
 ### `assets/dev_env_demo.gif`
@@ -252,7 +256,7 @@ CLI 主入口，負責：
 
 - 有指定名稱時，只顯示該環境。
 - 未指定名稱時，掃描 `generated/envs/*` 並逐一顯示。
-- VM 後端顯示 Multipass 狀態、IP 與 SSH 指令。
+- VM 後端由有效的 Multipass 清單顯示狀態、IP 與可用時的 SSH 指令；確定不存在時顯示 Missing 及清理提示，查詢失敗顯示 Unknown，保持唯讀。
 - DevContainer 後端將顯示工作容器與附加服務的狀態表。
 - `_print_single_status` 封裝單一環境的後端判斷與輸出流程。
 
@@ -277,10 +281,10 @@ CLI 主入口，負責：
 
 實作 `chien-dev clean <name>`，永久清理指定環境：
 
-- 同時檢查生成目錄與 Multipass VM，避免設定檔遺失時漏掉 VM。
+- 優先使用記錄的後端或生成檔判斷環境；必要時查詢 Multipass，避免設定檔遺失時漏掉 VM。
 - 先檢查 DevContainer 或 VM 的實際狀態；環境仍在執行或狀態無法可靠判斷時，拒絕清理並提示先執行 `stop`。
 - 執行前要求使用者確認，預設答案為否。
-- VM 後端刪除並 purge Multipass 實例。
+- VM 後端在確認前後各取得有效清單；消失時只移除生成檔案，Stopped／Deleted 使用 `multipass delete --purge <name>`，拒絕狀態不確定或重新出現的 VM，刪除失敗保留生成檔。
 - DevContainer 後端執行 `docker compose down -v --remove-orphans`，連同具名 volume 一起移除。
 - 最後刪除 `generated/envs/<name>/`。
 
@@ -303,7 +307,8 @@ CLI 主入口，負責：
 
 封裝 Multipass 與 VM 操作：
 
-- 檢查 Multipass、判斷 VM 是否存在、啟動、停止、刪除與 purge VM。
+- 檢查 Multipass、判斷 VM 是否存在、啟動、停止與指定名稱永久刪除。
+- `vm_get_inventory_entry` 供 status／clean 共用有效清單快照，驗證單一 JSON 文件、回應結構與精確名稱，區分不存在與查詢失敗。
 - 建立 VM 時套用 cloud-init、CPU、記憶體與磁碟參數。
 - 透過 Multipass JSON 輸出與 `jq` 取得 VM IP、狀態。
 - 在 macOS 或 Linux 偵測主機 CPU、記憶體與可用磁碟，供互動建立 VM 時參考。
