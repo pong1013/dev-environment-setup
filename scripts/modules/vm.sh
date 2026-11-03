@@ -12,6 +12,33 @@ vm_exists() {
   multipass info "${name}" >/dev/null 2>&1
 }
 
+# A successful, valid inventory is required to establish that a VM is absent.
+vm_get_inventory_entry() {
+  local name="$1"
+  local inventory
+  if ! inventory="$(multipass list --format json 2>/dev/null)"; then
+    return 1
+  fi
+  printf '%s\n' "${inventory}" | jq -ces --arg name "${name}" '
+    if length != 1 then error("Expected one Multipass inventory") else .[0] end |
+    if type != "object" or (.list | type) != "array" or
+       (if has("errors") then (.errors | type != "array" or length != 0) else false end) or
+       (all(.list[]; type == "object" and (.name | type) == "string" and
+         (.name | length) > 0 and (.state | type) == "string" and
+         (.state | length) > 0 and
+         (if has("ipv4") then (.ipv4 | type == "array" and all(.[]; type == "string")) else true end)) | not)
+    then error("Invalid Multipass inventory")
+    else
+      [.list[] | select(.name == $name)] as $matches |
+      if ($matches | length) == 0 then
+        {present: false, state: "Missing", ipv4: []}
+      elif ($matches | length) == 1 then
+        $matches[0] | {present: true, state: .state, ipv4: (.ipv4 // [])}
+      else error("Ambiguous Multipass instance") end
+    end
+  ' 2>/dev/null
+}
+
 vm_launch() {
   local name="$1"
   local cloud_init_file="$2"
@@ -66,8 +93,7 @@ vm_stop() {
 vm_delete() {
   local name="$1"
   log_info "Deleting VM: ${name}..."
-  multipass delete "${name}"
-  multipass purge
+  multipass delete --purge "${name}"
 }
 
 ensure_ssh_key() {

@@ -53,6 +53,13 @@ setup_mocks() {
   multipass() { :; }
   vm_exists() { return 1; }
   vm_get_status() { echo "Stopped"; }
+  vm_get_inventory_entry() {
+    if vm_exists "$1"; then
+      printf '{"present":true,"state":"%s","ipv4":[]}\n' "$(vm_get_status "$1")"
+    else
+      printf '{"present":false,"state":"Missing","ipv4":[]}\n'
+    fi
+  }
   vm_delete() { vm_deleted="true"; }
   ensure_dependencies() { :; }
   compose_project_is_running() { return 1; }

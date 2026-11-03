@@ -64,6 +64,9 @@ chien-dev status
 - `chien-dev shell <name>`: Enter workspace container bash (Container mode) or show SSH instructions (VM mode).
 - `chien-dev stop <name>`: Stop the environment.
 - `chien-dev clean <name>`: Remove a stopped environment and its generated files. Cleanup is refused while the environment is running.
+
+If Multipass or an external tool (such as local-k3s) removes a VM, its generated files remain registered until you run `chien-dev clean <name>` and confirm (default **no**). `status` stays read-only: it shows `Missing` and a cleanup hint only after a reliable inventory confirms absence, or `Unknown` when Multipass cannot be queried reliably. Cleaning a missing VM removes only its generated files. Stopped or `Deleted` VMs are permanently removed by exact name, without globally purging other deleted instances. After confirmation, cleanup rechecks the inventory and refuses running, uncertain, or newly appeared VMs; failed VM deletion preserves the generated files.
+
 - `chien-dev update`: Compare the running Git installation's commit with the canonical GitHub `main` commit. If behind, ask before a fast-forward update. Updating requires an interactive terminal and a clean installation checkout on local `main`; unsafe or unavailable checks fail without updating. There is no non-interactive update or `--yes` option.
 
 ### Non-interactive Mode (CI/CD Ready)

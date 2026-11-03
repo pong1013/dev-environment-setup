@@ -64,6 +64,9 @@ chien-dev status
 - `chien-dev shell <name>`：進入容器 bash (容器模式) 或顯示 SSH 登入指令 (VM 模式)。
 - `chien-dev stop <name>`：停止環境。
 - `chien-dev clean <name>`：移除已停止的環境及其產生檔案；環境仍在執行時會拒絕清理。
+
+若 Multipass 或外部工具（例如 local-k3s）移除了 VM，生成檔案仍會保留為本機紀錄，直到執行 `chien-dev clean <name>` 並確認（預設 **否**）。`status` 保持唯讀：只有可靠清單確認不存在時才顯示 `Missing` 與清理提示；無法可靠查詢 Multipass 時顯示 `Unknown`。清理消失的 VM 只移除其生成檔案。已停止或 `Deleted` 的 VM 會依指定名稱永久移除，不會全域清除其他已刪除實例。確認後會重新查詢，拒絕清理執行中、狀態不確定或重新出現的 VM；VM 刪除失敗時保留生成檔案。
+
 - `chien-dev update`：比較目前執行的 Git 安裝版本 commit 與官方 GitHub `main` commit；若有新版，確認後才以 fast-forward 更新。更新需有互動式終端機，且安裝目錄須在乾淨的本機 `main` 分支；無法確認版本或狀態不安全時會拒絕更新。不支援非互動更新或 `--yes` 選項。
 
 ### 非互動模式 (適合 CI/CD)

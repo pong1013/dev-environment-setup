@@ -53,6 +53,9 @@ Commands:
   clean <name>
     Remove the given environment (name required).
     Safety: refuses cleanup while the environment is running; run stop first.
+    Missing VMs: confirm (default no) to remove stale generated files only.
+    VM state is rechecked after confirmation; uncertain/newly appeared VMs
+    are refused. Stopped/Deleted VM removal purges only the selected name.
 
   update
     Compare this Git installation with GitHub main. If behind, ask before a

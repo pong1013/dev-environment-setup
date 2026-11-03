@@ -48,18 +48,33 @@ _print_single_status() {
   
   if [[ "${backend}" == "vm" ]]; then
     echo "=== ${env_name} (VM) ==="
-    if ! vm_exists "${env_name}"; then
-      echo "  State: Missing"
+    local vm_entry
+    if ! vm_entry="$(vm_get_inventory_entry "${env_name}")"; then
+      echo "  State: Unknown"
       echo "  IP:    N/A"
-      echo "  Hint:  chien-dev clean ${env_name}"
+      echo "  Hint:  Unable to query Multipass; check its service and permissions."
       echo ""
       return
     fi
-    local state=$(vm_get_status "${env_name}")
-    local ip=$(vm_get_ip "${env_name}")
+    if [[ "$(printf '%s\n' "${vm_entry}" | jq -r '.present')" == "false" ]]; then
+      echo "  State: Missing"
+      echo "  IP:    N/A"
+      echo "  Hint:  chien-dev clean ${env_name} (remove stale generated files)"
+      echo ""
+      return
+    fi
+    local state
+    local ip
+    state="$(printf '%s\n' "${vm_entry}" | jq -r '.state')"
+    ip="$(printf '%s\n' "${vm_entry}" | jq -r '.ipv4[0] // empty')"
     echo "  State: ${state:-Unknown}"
     echo "  IP:    ${ip:-N/A}"
-    echo "  Login: ssh ubuntu@${ip}"
+    if [[ -n "${ip}" ]]; then
+      echo "  Login: ssh ubuntu@${ip}"
+    fi
+    if [[ "${state}" == "Deleted" ]]; then
+      echo "  Hint:  chien-dev clean ${env_name}"
+    fi
     echo ""
   else
     local compose_file="$(compose_file_for "${env_name}")"
