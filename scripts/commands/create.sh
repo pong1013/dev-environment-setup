@@ -83,6 +83,10 @@ do_create() {
   local compose_file
   local cloud_init_file
   local env_type=""
+  local docker_socket="false"
+  local socket_enable_requested="false"
+  local socket_disable_requested="false"
+  local docker_socket_path="/var/run/docker.sock"
   
   # VM specific defaults
   local vm_cpus="${VM_CPUS:-2}"
@@ -94,6 +98,37 @@ do_create() {
   local env_name_input=""
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      --docker-socket)
+        socket_enable_requested="true"
+        docker_socket="true"
+        has_flags="true"
+        shift
+        ;;
+      --no-docker-socket)
+        socket_disable_requested="true"
+        docker_socket="false"
+        has_flags="true"
+        shift
+        ;;
+      --docker-socket-path)
+        shift
+        if [[ $# -eq 0 || "$1" == -* ]]; then
+          log_error "--docker-socket-path requires an absolute path."
+          exit 1
+        fi
+        docker_socket_path="$1"
+        socket_enable_requested="true"
+        docker_socket="true"
+        has_flags="true"
+        shift
+        ;;
+      --docker-socket-path=*)
+        docker_socket_path="${1#*=}"
+        socket_enable_requested="true"
+        docker_socket="true"
+        has_flags="true"
+        shift
+        ;;
       --backend|--env|-e|-env)
         local flag_name="$1"
         shift
@@ -357,6 +392,12 @@ do_create() {
     esac
   done
 
+  if [[ "${socket_enable_requested}" == "true" && "${socket_disable_requested}" == "true" ]]; then
+    log_error "Conflicting Docker socket enable and disable options."
+    exit 1
+  fi
+  validate_docker_socket_path "${docker_socket_path}"
+
   # Fallback to env_name_arg if not captured by positional parsing
   if [[ -z "${env_name_input}" ]]; then
     env_name_input="${env_name_arg:-}"
@@ -459,7 +500,22 @@ do_create() {
           Kafka)    include_kafka="true" ;;
         esac
       done <<< "${broker_options_raw}"
+
+      log_warn "Mounting the Docker socket lets this container control the host Docker daemon."
+      local socket_answer
+      if ! read -r -p "Mount the host Docker socket? [Y/n]: " socket_answer; then
+        log_error "No Docker socket answer received; environment creation cancelled."
+        exit 1
+      fi
+      if [[ "${socket_answer:-Y}" =~ ^[Yy]$ ]]; then
+        docker_socket="true"
+      fi
     fi
+  fi
+
+  if [[ "${env_type}" == "vm" && ( "${socket_enable_requested}" == "true" || "${socket_disable_requested}" == "true" ) ]]; then
+    log_error "Docker socket options are only supported for DevContainer environments."
+    exit 1
   fi
 
   env_dir="$(env_dir_for "${env_name}")"
@@ -496,9 +552,9 @@ do_create() {
     [[ "${include_rabbitmq}" == "true" ]] && rabbitmq_host_port=$(find_available_port 5672)
     [[ "${include_kafka}" == "true" ]] && kafka_host_port=$(find_available_port 9092)
 
-    render_config "${config_file}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}" "${pg_host_port}" "${mysql_host_port}" "${mongodb_host_port}" "${redis_host_port}" "${rabbitmq_host_port}" "${kafka_host_port}" "devcontainer"
-    render_devcontainer "${devcontainer_dir}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}"
-    render_compose "${compose_file}" "${ROOT_DIR}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}" "${pg_host_port}" "${mysql_host_port}" "${mongodb_host_port}" "${redis_host_port}" "${rabbitmq_host_port}" "${kafka_host_port}"
+    render_config "${config_file}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}" "${pg_host_port}" "${mysql_host_port}" "${mongodb_host_port}" "${redis_host_port}" "${rabbitmq_host_port}" "${kafka_host_port}" "devcontainer" "${docker_socket}" "${docker_socket_path}"
+    render_devcontainer "${devcontainer_dir}" "${env_name}" "${os_version}" "${include_go}" "${include_node}" "${include_python}" "${include_java}" "${include_php}" "${frontend_framework}" "${go_version}" "${node_version}" "${python_version}" "${java_version}" "${php_version}" "${docker_socket}"
+    render_compose "${compose_file}" "${ROOT_DIR}" "${include_pg}" "${include_mysql}" "${include_mongodb}" "${include_redis}" "${include_rabbitmq}" "${include_kafka}" "${pg_version}" "${mysql_version}" "${mongodb_version}" "${redis_version}" "${rabbitmq_version}" "${kafka_version}" "${pg_host_port}" "${mysql_host_port}" "${mongodb_host_port}" "${redis_host_port}" "${rabbitmq_host_port}" "${kafka_host_port}" "${docker_socket}" "${docker_socket_path}"
   fi
 
   echo ""

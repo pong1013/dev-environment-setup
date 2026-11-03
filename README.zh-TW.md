@@ -86,9 +86,16 @@ chien-dev create my-dev --langs go,node --db postgres
 | `--frontend`, `-f` | `react`, `vue`, `none` | `none` |
 | `--db`, `-d` | `postgres`, `mysql`, `mongodb` | 無 |
 | `--broker`, `-b` | `redis`, `rabbitmq`, `kafka` | 無 |
+| `--docker-socket` | 掛載主機 socket；安裝 Docker CLI + Compose（僅 DevContainer） | 非互動模式不啟用 |
+| `--no-docker-socket` | 停用 socket 存取 | - |
+| `--docker-socket-path` | 主機 socket 絕對路徑；指定即啟用 | `/var/run/docker.sock` |
 | `--cpus`, `-c` | VM 模式 CPU 數量 | `2` |
 | `--memory`, `-m` | VM 模式記憶體大小 | `2G` |
 | `--disk`, `-s` | VM 模式磁碟大小 | `10G` |
+
+互動建立 DevContainer 時會詢問是否掛載 Docker socket，預設為 **是**。啟用後容器可以控制主機 Docker daemon，並從 [Docker 官方 Ubuntu 套件庫](https://docs.docker.com/engine/install/ubuntu/) 安裝 Docker CLI 與 Compose；不會在容器內安裝或啟動另一個 daemon。非互動建立預設不啟用；可使用 `--docker-socket` 啟用、`--no-docker-socket` 停用，或 `--docker-socket-path "/absolute/path/docker.sock"` 指定來源。互相矛盾的啟用／停用旗標，以及 VM 模式使用 socket 旗標，都會被拒絕。
+
+容器內目標固定為 `/var/run/docker.sock`。來源路徑由 Docker daemon 所在主機解析，不一定是執行 CLI 的電腦；產生檔案時不必存在，但啟動容器時必須是可存取的 socket，系統不會自動建立來源目錄。Rootless 或遠端 Docker 可能需要自訂路徑及相符的存取權限。`docker run -v` 等命令的主機路徑也由該 daemon 主機解析。既有產生的環境不會改動；VM 安裝 Docker 另行追蹤。
 
 ---
 

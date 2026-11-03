@@ -35,6 +35,8 @@ render_config() {
   local rabbitmq_host_port="${31:-5672}"
   local kafka_host_port="${32:-9092}"
   local backend_type="${33:-devcontainer}"
+  local docker_socket="${34:-false}"
+  local docker_socket_path="${35:-/var/run/docker.sock}"
   cat > "${target_config_file}" <<EOF
 version: 1
 name: ${env_name}
@@ -100,6 +102,17 @@ services:
     port: 9092
     host_port: ${kafka_host_port}
 EOF
+  if [[ "${backend_type}" == "devcontainer" ]]; then
+    local yaml_quote="'"
+    local yaml_double_quote="''"
+    local quoted_socket_path="${docker_socket_path//${yaml_quote}/${yaml_double_quote}}"
+    cat >> "${target_config_file}" <<EOF
+
+docker_socket:
+  enabled: ${docker_socket}
+  path: '${quoted_socket_path}'
+EOF
+  fi
 }
 
 render_devcontainer() {
@@ -117,6 +130,7 @@ render_devcontainer() {
   local python_version="${12}"
   local java_version="${13}"
   local php_version="${14}"
+  local docker_socket="${15:-false}"
   mkdir -p "${target_devcontainer_dir}" "${GENERATED_DIR}"
 
   cat > "${target_devcontainer_dir}/Dockerfile" <<EOF
@@ -131,6 +145,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \\
 
 WORKDIR /workspace
 EOF
+
+  if [[ "${docker_socket}" == "true" ]]; then
+    cat >> "${target_devcontainer_dir}/Dockerfile" <<'EOF'
+
+# Docker client tools only; use the mounted host socket, no local daemon.
+RUN install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \
+    chmod a+r /etc/apt/keyrings/docker.asc && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin && \
+    rm -rf /var/lib/apt/lists/*
+EOF
+  fi
 
   if [[ "${include_go}" == "true" ]]; then
     cat >> "${target_devcontainer_dir}/Dockerfile" <<EOF
@@ -253,6 +280,9 @@ render_compose() {
   local rabbitmq_host_port="${19:-5672}"
   local kafka_host_port="${20:-9092}"
 
+  local docker_socket="${21:-false}"
+  local docker_socket_path="${22:-/var/run/docker.sock}"
+
   cat > "${target_compose_file}" <<EOF
 services:
   workspace:
@@ -261,6 +291,21 @@ services:
       dockerfile: Dockerfile
     volumes:
       - "\${PROJECT_PATH:-${default_project_path}}:/workspace"
+EOF
+  if [[ "${docker_socket}" == "true" ]]; then
+    local yaml_quote="'"
+    local yaml_double_quote="''"
+    local quoted_socket_path="${docker_socket_path//${yaml_quote}/${yaml_double_quote}}"
+    quoted_socket_path="${quoted_socket_path//\$/\$\$}"
+    cat >> "${target_compose_file}" <<EOF
+      - type: bind
+        source: '${quoted_socket_path}'
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: false
+EOF
+  fi
+  cat >> "${target_compose_file}" <<'EOF'
     command: sleep infinity
 EOF
 

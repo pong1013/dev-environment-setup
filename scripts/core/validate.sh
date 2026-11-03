@@ -26,3 +26,11 @@ validate_project_path() {
     exit 1
   fi
 }
+
+validate_docker_socket_path() {
+  local docker_socket_path="$1"
+  if [[ "${docker_socket_path}" != /* || "${docker_socket_path}" == / || "${docker_socket_path}" =~ [[:cntrl:]] ]]; then
+    log_error "Docker socket path must be an absolute file path without control characters."
+    exit 1
+  fi
+}
